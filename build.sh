@@ -1,0 +1,1 @@
+gcc app.c manager.c dropdown.c gpu.c patterns.c reconstruction.c sample.c -o build/tessera -lncurses -framework OpenCL
