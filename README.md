@@ -29,8 +29,6 @@ Tessera is a single pixel camera (SPC) control software. Connect any sensor to y
 
 ## 🚀 Usage
 
-*Show off what your software looks like in action! Try to limit it to one-liners if possible and don't delve into API specifics.*
-
 ```
 $ > ./tessera
 
@@ -69,3 +67,6 @@ Configure the settings to match your setup requirements:
 
 
 Finally, press start and sampling will begin. A periodic preview will be saved to ./out/preview.pgm
+
+![Tulip64_100_EDIT](https://github.com/user-attachments/assets/0870eacd-9758-4750-9b4b-4807e1917d00)
+
