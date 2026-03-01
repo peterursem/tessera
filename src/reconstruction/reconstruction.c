@@ -1,0 +1,97 @@
+#include "reconstruction.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+
+
+void fwht(float *data, int n) {
+    // n MUST be a power of 2 (e.g., 4096, 16384, etc.)
+    for (int h = 1; h < n; h *= 2) {
+        for (int i = 0; i < n; i += h * 2) {
+            for (int j = i; j < i + h; j++) {
+                float x = data[j];
+                float y = data[j + h];
+
+                // In-place butterfly
+                data[j] = x + y;
+                data[j + h] = x - y;
+            }
+        }
+    }
+}
+
+Reconstructor* reconstruct_init(int resolution) {
+    Reconstructor *recon = (Reconstructor*)malloc(sizeof(Reconstructor));
+    int total_pixels = resolution * resolution;
+
+    recon->resolution = resolution;
+    recon->total_pixels = total_pixels;
+    recon->average = 0.0f;
+    recon->measurements = (float *)calloc(total_pixels, sizeof(float));
+
+    return recon;
+}
+
+/*
+
+  Set the full brightness measurement average  
+
+*/
+void reconstruct_calibrate(Reconstructor *recon, int sensor_value) {
+    recon->average = sensor_value;
+}
+
+/*
+
+    Add a sensor value to the measurement array
+
+*/
+void reconstruct_add(Reconstructor *recon, int pattern_u, int pattern_v, int sensor_value) {
+    int pattern_index = pattern_u * recon->resolution + pattern_v;
+    recon->measurements[pattern_index] = (2 * sensor_value) - recon->average;
+}
+
+/*
+
+    Normalize the output buffer and save it
+
+*/
+void reconstruct_save(Reconstructor recon, const char *filename) {
+
+    fwht(recon.measurements, recon.resolution);
+
+    // Open the file
+    FILE *fp = fopen(filename, "wb");
+    if (!fp) {
+        fprintf(stderr, "Error opening file %s\n", filename);
+        return;
+    }
+
+    // Find min / max
+    float min = 1e9, max = -1e9;
+    for (int px = 1; px < recon.total_pixels; px++) {
+        if (recon.measurements[px] < min) min = recon.measurements[px];
+        if (recon.measurements[px] > max) max = recon.measurements[px];
+    }
+    // Calculate range
+    float range = max - min;
+    if (range == 0) range = 1.0;
+
+    // Output .PGM image
+    fprintf(fp, "P5\n%d %d\n255\n", recon.resolution, recon.resolution);
+    for (int px = 0; px < recon.total_pixels; px++) {
+        // Normalize the pixel luminance
+        unsigned char p = (unsigned char)(((recon.measurements[px] - min) / range) * 255.0f);
+        fwrite(&p, 1, 1, fp);
+    }
+
+    // Close the file
+    fclose(fp);
+}
+
+void reconstruct_free(Reconstructor *recon) {
+    if (recon) {
+        free(recon->measurements);
+        free(recon);
+    }
+}

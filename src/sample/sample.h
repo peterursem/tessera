@@ -1,3 +1,6 @@
+#define MIN_SENSOR_READ 0
+#define MAX_SENSOR_READ 1024
+
 // Context to hold the state of the serial connection
 typedef struct {
     int fd;             // File descriptor
@@ -5,7 +8,6 @@ typedef struct {
     int buf_pos;        // Current position in buffer
 } SerialContext;
 
-// Prototypes
 int serial_init(SerialContext* ctx, const char* port_name, int baud_rate);
-int serial_read_int(SerialContext* ctx, int* value_out);
+int serial_read_int(SerialContext* ctx, int* value_out, int max_value, int min_value);
 void serial_close(SerialContext* ctx);

@@ -1,1 +1,0 @@
-void draw_progress_bar(int x, int width, float percentage);
