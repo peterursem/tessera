@@ -11,7 +11,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew" "/usr/local")
 
 # Include GLFW
-add_subdirectory("include/glfw")
+add_subdirectory("include/glfw/")
 
 # Find the required system libraries
 find_package(OpenGL REQUIRED)
