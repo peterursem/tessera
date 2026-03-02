@@ -10,16 +10,23 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 # Inlcude from Homebrew
 list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew" "/usr/local")
 
-# Include GLFW
-add_subdirectory("include/glfw/")
-
 # Find the required system libraries
 find_package(OpenGL REQUIRED)
-find_package(glfw3 CONFIG REQUIRED)
 find_package(Curses REQUIRED)
 
+# Build GLFW
+add_subdirectory("include/glfw/")
+
 # Add source files
-add_executable(tessera src/app.c src/ui/ui.c src/ui/dropdown.c src/patterns/patterns.c src/patterns/glad.c src/sample/sample.c src/reconstruction/reconstruction.c)
+add_executable(tessera 
+    src/app.c 
+    src/ui/ui.c 
+    src/ui/dropdown.c 
+    src/patterns/patterns.c 
+    src/patterns/glad.c 
+    src/sample/sample.c 
+    src/reconstruction/reconstruction.c
+    )
 
 # Add include directories
 target_include_directories(tessera PRIVATE 
