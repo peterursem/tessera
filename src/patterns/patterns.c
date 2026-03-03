@@ -9,6 +9,7 @@
 */
 
 #include "patterns.h"
+#include "hadamard.frag.h"
 
 #include <stdio.h>	// For printing errors to the console
 #include <stdlib.h> // For malloc and free
@@ -30,17 +31,12 @@ int compare_patterns(const void *a, const void *b);
 void patterns_shader_init(int resolution)
 {
 	// Vertex shader for a single fullscreen quad
-	const char *vertex_shader_source = "#version 410 core\n"
+	const GLchar *vertex_shader_source = "#version 410 core\n"
 									   "const vec2 vertices[4] = vec2[4](vec2(-1.0, -1.0), vec2(1.0, -1.0), vec2(-1.0, 1.0), vec2(1.0, 1.0));\n"
 									   "void main() { gl_Position = vec4(vertices[gl_VertexID], 0.0, 1.0); }\n";
 
-	// Hadamard fragment shader (from file)
-	const char fragment_shader_source[] = {
-		#embed "hadamard.frag"
-		, '\0'
-	};
-
-	const char *fragment_shader_ptr = fragment_shader_source;
+	const GLchar *frag_shader_source = (const GLchar *)hadamard_frag;
+	GLint frag_shader_length = (GLint)hadamard_frag_len;
 
 	// Shader and program IDs
 	GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
@@ -62,7 +58,7 @@ void patterns_shader_init(int resolution)
     }
 
 	// Compile fragment shader
-	glShaderSource(fragment_shader, 1, &fragment_shader_ptr, NULL);
+	glShaderSource(fragment_shader, 1, &frag_shader_source, &frag_shader_length);
 	glCompileShader(fragment_shader);
 	// Debug
     glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);

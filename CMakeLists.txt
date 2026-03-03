@@ -17,20 +17,57 @@ find_package(Curses REQUIRED)
 # Build GLFW
 add_subdirectory("include/glfw/")
 
+# Turn shader to .h file
+set(SHADER_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/patterns/hadamard.frag")
+set(SHADER_HEADER "${CMAKE_CURRENT_BINARY_DIR}/hadamard.frag.h")
+
+# Convert using xxd command
+add_custom_command(
+    OUTPUT "${SHADER_HEADER}"
+
+    COMMAND xxd -i hadamard.frag > ${SHADER_HEADER}
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/patterns"
+
+    # Re-run this command if the shader file changes
+    DEPENDS ${SHADER_FILE}
+    COMMENT "Generating hadamard.frag.h from hadamard.frag..."
+    VERBATIM
+)
+
 # Add source files
-add_executable(tessera 
+if (MACOS)
+add_executable(tessera MACOSX_BUNDLE
     src/app.c 
     src/ui/ui.c 
     src/ui/dropdown.c 
     src/patterns/patterns.c 
+    ${SHADER_HEADER}
     src/patterns/glad.c 
     src/sample/sample.c 
     src/reconstruction/reconstruction.c
-    )
+)
+
+set_target_properties(tessera PROPERTIES
+    MACOSX_BUNDLE True
+    MACOSX_BUNDLE_INFO_PLIST Info.plist
+)
+else()
+add_executable(tessera
+    src/app.c 
+    src/ui/ui.c 
+    src/ui/dropdown.c 
+    src/patterns/patterns.c 
+    ${SHADER_HEADER}
+    src/patterns/glad.c 
+    src/sample/sample.c 
+    src/reconstruction/reconstruction.c
+)
+endif()
 
 # Add include directories
 target_include_directories(tessera PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_BINARY_DIR}
     ${CURSES_INCLUDE_DIRS}
 )
 
