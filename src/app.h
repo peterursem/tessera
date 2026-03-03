@@ -7,7 +7,7 @@ typedef struct {
     int framerate;
     int batch_size;
     int progress;
-    char sensor_port[32];
+    const char sensor_port[32];
 } TesseraStatus;
 
 volatile TesseraStatus app_status;
