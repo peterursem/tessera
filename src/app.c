@@ -45,7 +45,7 @@ int main()
 	// ===== Setup =====
 
 	app_status.active = 0;
-    app_status.batch_size = 24;
+    app_status.batch_size = 1;
     app_status.progress = 0.0f;
 
 	// Start Terminal UI
