@@ -12,7 +12,7 @@
     <string>A single pixel camera patterning and reconstruction tool.</string>
 
     <key>CFBundleExecutable</key>
-    <string>tessera</string>
+    <string>start.sh</string>
 
     <key>CFBundleIconFile</key>
     <string>Icon.icns</string>

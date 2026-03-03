@@ -39,6 +39,10 @@ jobs:
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: ctest -C ${{env.BUILD_TYPE}}
 
+    - name: Pack
+      working-directory: ${{github.workspace}}/build
+      run: cpack
+
     - name: Save compiled binary
       uses: actions/upload-artifact@v7
       with:

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(Tessera LANGUAGES C)
+project(Tessera VERSION 1.0.0 LANGUAGES C)
 
 set(CMAKE_BUILD_TYPE Debug)
 
@@ -17,6 +17,7 @@ find_package(Curses REQUIRED)
 # Build GLFW
 if(NOT TARGET glfw)
     message(STATUS "GLFW not found, building from '/include'")
+    set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
     add_subdirectory("include/glfw/")
 endif()
 
@@ -39,6 +40,12 @@ add_custom_command(
 
 # Add source files
 if (APPLE)
+# Put app icon in /resources/
+set(MACOS_ICON "${CMAKE_CURRENT_SOURCE_DIR}/MacOS/Icon.icns")
+set_source_files_properties(${MACOS_ICON} PROPERTIES
+    MACOSX_PACKAGE_LOCATION "Resources"
+)
+# Make excecutable as a MacOS bundle
 add_executable(tessera MACOSX_BUNDLE
     src/app.c 
     src/ui/ui.c 
@@ -48,12 +55,32 @@ add_executable(tessera MACOSX_BUNDLE
     src/patterns/glad.c 
     src/sample/sample.c 
     src/reconstruction/reconstruction.c
+    ${MACOS_ICON}
 )
 
+# Configure bundle
 set_target_properties(tessera PROPERTIES
     MACOSX_BUNDLE True
-    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist
+    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/MacOS/Info.plist
 )
+
+# Load app start script
+set(SCRIPT_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/MacOS/start.sh")
+
+# Copy the script into the bundle's MacOS directory after the build
+add_custom_command(
+    COMMENT "Copying the shell script into the app bundle's MacOS directory"
+    TARGET tessera POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${SCRIPT_SOURCE_PATH}"
+        $<TARGET_BUNDLE_CONTENT_DIR:tessera>/MacOS/
+    COMMAND chmod +x "$<TARGET_BUNDLE_CONTENT_DIR:tessera>/MacOS/start.sh"
+)
+
+set(CPACK_GENERATOR "DragNDrop")
+set(CPACK_BUNDLE_ICON ${MACOS_ICON})
+set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-v${PROJECT_VERSION}-macOS")
+
 else()
 add_executable(tessera
     src/app.c 
@@ -80,3 +107,11 @@ target_link_libraries(tessera PRIVATE
     OpenGL::GL
     ${CURSES_LIBRARIES}
 )
+
+install(TARGETS tessera
+    BUNDLE DESTINATION .
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+)
+
+include(CPack)
