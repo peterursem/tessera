@@ -186,10 +186,12 @@ void dropdowns_draw_menu(Form *form)
 
 void form_start_handler(Form *form)
 {
+	char *sensor_selection = (char *)&form->fields[2].options[form->fields[2].current_selection];
+
 	// Set app variables
 	app_status.resolution = 2 << (3 + form->fields[0].current_selection);
 	app_status.framerate = framerates[form->fields[1].current_selection];
-	sprintf(app_status.sensor_port, "/dev/%s", &form->fields[2].options[form->fields[2].current_selection]);
+	sprintf((char *)app_status.sensor_port, "/dev/%s", sensor_selection);
 
 	app_status.active = 1;
 	form->form_active = 0;

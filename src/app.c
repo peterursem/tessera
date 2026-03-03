@@ -64,7 +64,7 @@ int main()
 	patterns_gl_init();
 	// Start a borderless fulscreen square window
 	window = patterns_window_init();
-	// Load the shader program
+	// Load the shader
 	patterns_shader_init(app_status.resolution);
 
 	// Load the patterns into VRAM in sequency order and save the sequence
