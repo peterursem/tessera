@@ -3,9 +3,9 @@
 
 typedef struct {
     int active;
-    int resolution;
-    int framerate;
-    int batch_size;
+    const int resolution;
+    const int framerate;
+    const int batch_size;
     int progress;
     const char sensor_port[32];
 } TesseraStatus;
