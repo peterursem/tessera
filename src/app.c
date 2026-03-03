@@ -76,7 +76,7 @@ int main()
 	patterns = patterns_load_sequence(app_status.resolution);
 
 	// Setup serial communication
-	if (serial_init(&arduino, (char *)app_status.sensor_port, 9600) < 0)
+	if (serial_init(&arduino, (char *)app_status.sensor_port) < 0)
 	{
 		fprintf(stderr, "Error: Could not open serial port.\n");
 		return -1;
@@ -92,6 +92,7 @@ int main()
 
 	for (pattern_id = 0; pattern_id < total_patterns; pattern_id += app_status.batch_size)
 	{
+		// Put pattern on screen
 		if (patterns_render(window, pattern_id, app_status.batch_size, app_status.resolution) < 0) {
 			break;
 		}
@@ -107,8 +108,6 @@ int main()
 		while (!reading_status)
 		{
 			reading_status = serial_read_int(&arduino, &sensor_val, MIN_SENSOR_READ, MAX_SENSOR_READ);
-			printf("%d, %d",reading_status,sensor_val);
-			sleep(1);
 		}
 		reading_status = 0;
 

@@ -8,6 +8,6 @@ typedef struct {
     int buf_pos;        // Current position in buffer
 } SerialContext;
 
-int serial_init(SerialContext* ctx, const char* port_name, int baud_rate);
+int serial_init(SerialContext* ctx, const char* port_name);
 int serial_read_int(SerialContext* ctx, int* value_out, int max_value, int min_value);
 void serial_close(SerialContext* ctx);

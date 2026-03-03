@@ -12,7 +12,7 @@
 	Initialize the serial port in a non-blocking mode.
 
 */
-int serial_init(SerialContext *ctx, const char *port_name, int baud_rate)
+int serial_init(SerialContext *ctx, const char *port_name)
 {
 	ctx->buf_pos = 0;
 	memset(ctx->buffer, 0, sizeof(ctx->buffer));
@@ -30,17 +30,17 @@ int serial_init(SerialContext *ctx, const char *port_name, int baud_rate)
 	if (tcgetattr(ctx->fd, &tty) != 0)
 		return -1;
 
-	// Set Baud Rate
-	speed_t speed = B9600;
-	if (baud_rate == 115200)
-		speed = B115200;
+	cfsetispeed(&tty, B115200);
+	cfsetospeed(&tty, B115200);
 
-	cfsetispeed(&tty, speed);
-	cfsetospeed(&tty, speed);
+    tty.c_cflag |= (CLOCAL | CREAD);
+    tty.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG); // Raw input
+    tty.c_iflag &= ~(IXON | IXOFF | IXANY); // No flow control
+    tty.c_oflag &= ~OPOST; // Raw output
 
 	cfmakeraw(&tty);	 // Make Raw and Non-Blocking
-	tty.c_cc[VMIN] = 0;	 // Return immediately even if 0 bytes
-	tty.c_cc[VTIME] = 0; // No timeout
+	tty.c_cc[VMIN] = 1;	 // Get at least 1 byte
+	tty.c_cc[VTIME] = 1; // 100ms timeout
 
 	// Apply settings
 	if (tcsetattr(ctx->fd, TCSANOW, &tty) != 0)
@@ -58,17 +58,16 @@ int serial_init(SerialContext *ctx, const char *port_name, int baud_rate)
 
 */
 int serial_read_int(SerialContext *ctx, int *value_out, int min_val, int max_val) {
-    // 1. Flush and trigger EXACTLY ONCE per measurement
-    tcflush(ctx->fd, TCIFLUSH); // Flush out old values before reading
+    //tcflush(ctx->fd, TCIFLUSH); // Flush out old values before reading
 
 	// Send a trigger to the arduino to request a measurement.
     char trigger = 'r';
-    write(ctx->fd, &trigger, 2);
+    write(ctx->fd, &trigger, 1);
 
     // Reset our persistent buffer for the new incoming reading
     ctx->buf_pos = 0; 
 
-    // 2. Loop until we receive the complete response
+    // Loop until we receive the complete response
     while (1) {
         char temp_buf[64];
         int n = read(ctx->fd, temp_buf, sizeof(temp_buf));
@@ -96,8 +95,6 @@ int serial_read_int(SerialContext *ctx, int *value_out, int min_val, int max_val
                     ctx->buffer[ctx->buf_pos++] = c;
                 }
             }
-        } else {
-            usleep(1000); 
         }
     }
 }
