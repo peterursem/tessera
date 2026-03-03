@@ -13,12 +13,26 @@ list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew" "/usr/local")
 # Find the required system libraries
 find_package(OpenGL REQUIRED)
 find_package(Curses REQUIRED)
+find_package(glfw3 QUIET)
 
-# Build GLFW
-if(NOT TARGET glfw)
-    message(STATUS "GLFW not found, building from '/include'")
+# If glfw wasn't found
+if(NOT glfw3_FOUND AND NOT TARGET glfw)
+    message(STATUS "GLFW system package not found, building from 'include/glfw/'")
+    
+    # Prevent GLFW from installing its own files to the system during 'make install'
+    set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
     set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
-    add_subdirectory("include/glfw/")
+    set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+
+    # Add the subdirectory
+    add_subdirectory("include/glfw")
+    
+    # Create an alias to glfw
+    if(TARGET glfw)
+        add_library(glfw_lib INTERFACE)
+        target_link_libraries(glfw_lib INTERFACE glfw)
+    endif()
 endif()
 
 # Define shader source and .h file
@@ -40,58 +54,66 @@ add_custom_command(
 
 # Add source files
 if (APPLE)
-# Put app icon in /resources/
-set(MACOS_ICON "${CMAKE_CURRENT_SOURCE_DIR}/MacOS/Icon.icns")
-set_source_files_properties(${MACOS_ICON} PROPERTIES
-    MACOSX_PACKAGE_LOCATION "Resources"
-)
-# Make excecutable as a MacOS bundle
-add_executable(tessera MACOSX_BUNDLE
-    src/app.c 
-    src/ui/ui.c 
-    src/ui/dropdown.c 
-    src/patterns/patterns.c 
-    ${SHADER_HEADER}
-    src/patterns/glad.c 
-    src/sample/sample.c 
-    src/reconstruction/reconstruction.c
-    ${MACOS_ICON}
-)
+    # Put app icon in /resources/
+    set(MACOS_ICON "${CMAKE_CURRENT_SOURCE_DIR}/MacOS/Icon.icns")
+    set_source_files_properties(${MACOS_ICON} PROPERTIES
+        MACOSX_PACKAGE_LOCATION "Resources"
+    )
 
-# Configure bundle
-set_target_properties(tessera PROPERTIES
-    MACOSX_BUNDLE True
-    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/MacOS/Info.plist
-)
+    # Make excecutable as a MacOS bundle
+    add_executable(tessera MACOSX_BUNDLE
+        src/app.c 
+        src/ui/ui.c 
+        src/ui/dropdown.c 
+        src/patterns/patterns.c 
+        ${SHADER_HEADER}
+        src/patterns/glad.c 
+        src/sample/sample.c 
+        src/reconstruction/reconstruction.c
+        ${MACOS_ICON}
+    )
 
-# Load app start script
-set(SCRIPT_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/MacOS/start.sh")
+    # Configure bundle
+    set_target_properties(tessera PROPERTIES
+        MACOSX_BUNDLE True
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/MacOS/Info.plist
+    )
 
-# Copy the script into the bundle's MacOS directory after the build
-add_custom_command(
-    COMMENT "Copying the shell script into the app bundle's MacOS directory"
-    TARGET tessera POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-        "${SCRIPT_SOURCE_PATH}"
-        $<TARGET_BUNDLE_CONTENT_DIR:tessera>/MacOS/
-    COMMAND chmod +x "$<TARGET_BUNDLE_CONTENT_DIR:tessera>/MacOS/start.sh"
-)
+    # Load app start script
+    set(SCRIPT_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/MacOS/start.sh")
 
-set(CPACK_GENERATOR "DragNDrop")
-set(CPACK_BUNDLE_ICON ${MACOS_ICON})
-set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-v${PROJECT_VERSION}-macOS")
+    # Copy the script into the bundle's MacOS directory after the build
+    add_custom_command(
+        COMMENT "Copying the shell script into the app bundle's MacOS directory"
+        TARGET tessera POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+            "${SCRIPT_SOURCE_PATH}"
+            $<TARGET_BUNDLE_CONTENT_DIR:tessera>/MacOS/
+        COMMAND chmod +x "$<TARGET_BUNDLE_CONTENT_DIR:tessera>/MacOS/start.sh"
+    )
 
+    set(CPACK_GENERATOR "DragNDrop")
+    set(CPACK_BUNDLE_ICON ${MACOS_ICON})
+    set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-v${PROJECT_VERSION}-macOS")
 else()
-add_executable(tessera
-    src/app.c 
-    src/ui/ui.c 
-    src/ui/dropdown.c 
-    src/patterns/patterns.c 
-    ${SHADER_HEADER}
-    src/patterns/glad.c 
-    src/sample/sample.c 
-    src/reconstruction/reconstruction.c
-)
+    add_executable(tessera
+        src/app.c 
+        src/ui/ui.c 
+        src/ui/dropdown.c 
+        src/patterns/patterns.c 
+        ${SHADER_HEADER}
+        src/patterns/glad.c 
+        src/sample/sample.c 
+        src/reconstruction/reconstruction.c
+    )
+endif()
+
+# Testing
+option(TESTING "Build tests for ${PROJECT_NAME}" ON)
+if (TESTING)
+    message("-- Building tests")
+    enable_testing()
+    add_subdirectory(tests)
 endif()
 
 # Add include directories
