@@ -15,13 +15,16 @@ find_package(OpenGL REQUIRED)
 find_package(Curses REQUIRED)
 
 # Build GLFW
-add_subdirectory("include/glfw/")
+if(NOT TARGET glfw)
+    message(STATUS "GLFW not found, building from '/include'")
+    add_subdirectory("include/glfw/")
+endif()
 
 # Turn shader to .h file
 set(SHADER_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/patterns/hadamard.frag")
 set(SHADER_HEADER "${CMAKE_CURRENT_BINARY_DIR}/hadamard.frag.h")
 
-# Convert using xxd command
+# Convert shader using xxd command
 add_custom_command(
     OUTPUT "${SHADER_HEADER}"
 
