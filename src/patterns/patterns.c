@@ -137,7 +137,7 @@ int* patterns_load_sequence(int resolution)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Upload pattern array as a texture with 2 16bit channels
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16UI, resolution, resolution, 0, GL_RG_INTEGER, GL_INT, patterns_flat);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32I, resolution, resolution, 0, GL_RG_INTEGER, GL_INT, patterns_flat);
 
 	return patterns_flat;
 }
