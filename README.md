@@ -69,9 +69,7 @@ The software is composed of two elements:
     * Display patterns
  
 * **Reconstruction:**
-    * Get the weight of each pattern and sum them to obtain a result
-    * The weight of each pattern is determined by the light intensity measured by the sensor.
-    * A simplified final expression is $`x = \sum H_ny_n `$ where x is the result, $`H_n`$ is the Hadamard pattern being sampled and $`y_n`$ is the light intensity measured.
+    * All the measurements are stored and then run through a fast Walsh-Hadamard transform to create a final image
 
 
 ## 📸 Usage
