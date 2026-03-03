@@ -2,19 +2,22 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
+void fwht(const float *input, float *output, int n) {
+    // Copy to leave the input untouched
+    memcpy(output, input, n * sizeof(float));
 
-void fwht(float *data, int n) {
     // n MUST be a power of 2 (e.g., 4096, 16384, etc.)
     for (int h = 1; h < n; h *= 2) {
         for (int i = 0; i < n; i += h * 2) {
             for (int j = i; j < i + h; j++) {
-                float x = data[j];
-                float y = data[j + h];
+                float x = output[j];
+                float y = output[j + h];
 
                 // In-place butterfly
-                data[j] = x + y;
-                data[j + h] = x - y;
+                output[j] = x + y;
+                output[j + h] = x - y;
             }
         }
     }
@@ -56,9 +59,12 @@ void reconstruct_add(Reconstructor *recon, int pattern_u, int pattern_v, int sen
     Normalize the output buffer and save it
 
 */
-void reconstruct_save(Reconstructor recon, const char *filename) {
+void reconstruct_save(Reconstructor *recon, const char *filename) {
+    float measurement = 0.0f;
 
-    fwht(recon.measurements, recon.resolution);
+    float *transformed = (float *)malloc(recon->total_pixels * sizeof(float));
+
+    fwht(recon->measurements, transformed, recon->total_pixels);
 
     // Open the file
     FILE *fp = fopen(filename, "wb");
@@ -69,21 +75,31 @@ void reconstruct_save(Reconstructor recon, const char *filename) {
 
     // Find min / max
     float min = 1e9, max = -1e9;
-    for (int px = 1; px < recon.total_pixels; px++) {
-        if (recon.measurements[px] < min) min = recon.measurements[px];
-        if (recon.measurements[px] > max) max = recon.measurements[px];
+    for (int px = 1; px < recon->total_pixels; px++) {
+        if (transformed[px] < min) min = transformed[px];
+        if (transformed[px] > max) max = transformed[px];
     }
+
     // Calculate range
     float range = max - min;
     if (range == 0) range = 1.0;
 
     // Output .PGM image
-    fprintf(fp, "P5\n%d %d\n255\n", recon.resolution, recon.resolution);
-    for (int px = 0; px < recon.total_pixels; px++) {
+    fprintf(fp, "P5\n%d %d\n255\n", recon->resolution, recon->resolution);
+    for (int px = 0; px < recon->total_pixels; px++) {
         // Normalize the pixel luminance
-        unsigned char p = (unsigned char)(((recon.measurements[px] - min) / range) * 255.0f);
+        float value = ((transformed[px] - min) / range) * 255.0f;
+
+        // Clamp to 0-255 range
+        if (value < 0.0f) value = 0.0f;
+        if (value > 255.0f) value = 255.0f;
+
+        // Add to image
+        unsigned char p = (unsigned char)value;
         fwrite(&p, 1, 1, fp);
     }
+
+    free(transformed);
 
     // Close the file
     fclose(fp);

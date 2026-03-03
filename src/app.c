@@ -36,11 +36,14 @@ int main()
 	int sensor_val = 0;
 	int reading_status = 0;
 
-	//Reconstruction
+	// Reconstruction
 	Reconstructor *recon;
 
+	// UI
 	pthread_t tui_thread;
 
+	// Control
+	int total_patterns;
 
 	// ===== Setup =====
 
@@ -57,7 +60,11 @@ int main()
 	while(app_status.active == 0) {
 		usleep(300000);
 	}
+
+	// ===== Start the OpenGL program =====
 	
+	total_patterns = app_status.resolution * app_status.resolution;
+
 	// Init OpenGL
 	patterns_gl_init();
 	// Start a borderless fulscreen square window
@@ -83,7 +90,7 @@ int main()
 
 	// ===== The Loop =====
 
-	for (pattern_id = 0; pattern_id < (app_status.resolution * app_status.resolution); pattern_id += app_status.batch_size)
+	for (pattern_id = 0; pattern_id < total_patterns; pattern_id += app_status.batch_size)
 	{
 		if (patterns_render(window, pattern_id, app_status.batch_size, app_status.resolution) < 0) {
 			break;
@@ -99,7 +106,9 @@ int main()
 
 		while (!reading_status)
 		{
-			reading_status = 1;//serial_read_int(&arduino, &sensor_val, MIN_SENSOR_READ, MAX_SENSOR_READ);
+			reading_status = serial_read_int(&arduino, &sensor_val, MIN_SENSOR_READ, MAX_SENSOR_READ);
+			printf("%d, %d",reading_status,sensor_val);
+			sleep(1);
 		}
 		reading_status = 0;
 
@@ -107,21 +116,22 @@ int main()
 			// Take average from first pattern (100% White)
 			reconstruct_calibrate(recon, sensor_val);
 		} else {
+			// Add to the measurement matrix at the given u, v index
 			reconstruct_add(recon, patterns[pattern_id * 2], patterns[pattern_id * 2 + 1], sensor_val);
 		}
 
 		// Render TUI
 		app_status.progress = pattern_id;
 
-		if (pattern_id > 0 && pattern_id % 16 == 0)
+		if (pattern_id > 0 && pattern_id % (total_patterns / 20) == 0)
 		{
-			reconstruct_save(*recon, "preview.pgm");
+			reconstruct_save(recon, "preview.pgm");
 		}
 	}
 
 	app_status.progress = pattern_id;
 
-	reconstruct_save(*recon, "result.pgm");
+	reconstruct_save(recon, "result.pgm");
 
 	free(patterns); // Delete flat packed pattern u, v data
 	glfwTerminate(); // End OpenGL
