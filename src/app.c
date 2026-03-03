@@ -20,15 +20,11 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-void app_loop(TesseraStatus status, GLFWwindow *window, SerialContext *arduino, Reconstructor *recon, int *patterns) {
-	
-}
+TesseraStatus app_status;
 
 int main()
 {
 	// ===== VARS =====
-
-	TesseraStatus app_status;
 
 	// Pattern Generation and display
 	GLFWwindow *window = NULL;
