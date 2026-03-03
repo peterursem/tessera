@@ -10,6 +10,6 @@ typedef struct {
     char sensor_port[32];
 } TesseraStatus;
 
-volatile TesseraStatus app_status;
+volatile extern TesseraStatus app_status;
 
 #endif

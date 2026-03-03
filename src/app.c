@@ -28,6 +28,8 @@ int main()
 {
 	// ===== VARS =====
 
+	TesseraStatus app_status;
+
 	// Pattern Generation and display
 	GLFWwindow *window = NULL;
 	int *patterns;
