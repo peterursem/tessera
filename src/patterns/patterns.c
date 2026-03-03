@@ -191,7 +191,7 @@ GLFWwindow* patterns_window_init() {
 	glfwGetMonitorPos(monitor, &monitor_x, &monitor_y);
 	// Place window in bottom center of the screen
 	pos_x = monitor_x + (mode->width - resolution) / 2;
-	pos_y = monitor_y - resolution;
+	pos_y = monitor_y + mode->height - resolution;
 
 
 	// Start window
