@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-TesseraStatus app_status;
+volatile TesseraStatus app_status;
 
 int main()
 {
@@ -69,7 +69,7 @@ int main()
 	patterns = patterns_load_sequence(app_status.resolution);
 
 	// Setup serial communication
-	if (serial_init(&arduino, app_status.sensor_port, 9600) < 0)
+	if (serial_init(&arduino, (char *)app_status.sensor_port, 9600) < 0)
 	{
 		fprintf(stderr, "Error: Could not open serial port.\n");
 		return -1;
