@@ -3,14 +3,6 @@
 
 #include "../../src/patterns/patterns.c"
 
-int main() {
-    int r = 0;
-
-    r |= test_bit_depth();
-
-    return r;
-}
-
 /*
 
     Test bit depth with powers of 2
@@ -25,6 +17,14 @@ int test_bit_depth() {
         int power = (int)pow(2,n);
         r |= assertEquals(bit_depth(power), n);
     }
+
+    return r;
+}
+
+int main() {
+    int r = 0;
+
+    r |= test_bit_depth();
 
     return r;
 }
