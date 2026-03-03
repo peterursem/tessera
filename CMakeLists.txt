@@ -38,7 +38,7 @@ add_custom_command(
 )
 
 # Add source files
-if (MACOS)
+if (APPLE)
 add_executable(tessera MACOSX_BUNDLE
     src/app.c 
     src/ui/ui.c 
