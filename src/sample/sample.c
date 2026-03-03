@@ -57,51 +57,49 @@ int serial_init(SerialContext *ctx, const char *port_name, int baud_rate)
 	Returns 0 on a successful read.
 
 */
-int serial_read_int(SerialContext *ctx, int *value_out, int max_val, int min_val)
-{
-	tcflush(ctx->fd, TCIFLUSH); // Flush out old values before reading
+int serial_read_int(SerialContext *ctx, int *value_out, int min_val, int max_val) {
+    // 1. Flush and trigger EXACTLY ONCE per measurement
+    tcflush(ctx->fd, TCIFLUSH); // Flush out old values before reading
 
 	// Send a trigger to the arduino to request a measurement.
-	char trigger = 'r';
-	write(ctx->fd, &trigger, 1);
+    char trigger = 'r';
+    write(ctx->fd, &trigger, 2);
 
-	char temp_buf[64];
+    // Reset our persistent buffer for the new incoming reading
+    ctx->buf_pos = 0; 
 
-	// Attempt to read whatever is currently available
-	int n = read(ctx->fd, temp_buf, sizeof(temp_buf));
+    // 2. Loop until we receive the complete response
+    while (1) {
+        char temp_buf[64];
+        int n = read(ctx->fd, temp_buf, sizeof(temp_buf));
 
-	// If a character was read
-	if (n > 0)
-	{
-		// Parse each character
-		for (int i = 0; i < n; i++)
-		{
-			char c = temp_buf[i];
+        if (n > 0) {
+            for (int i = 0; i < n; i++) {
+                char c = temp_buf[i];
 
-			// If this character is a newline and not the first character
-			if ((c == '\n' || c == '\r') && ctx->buf_pos > 0)
-			{
-				ctx->buffer[ctx->buf_pos] = '\0'; // Null terminate
-				*value_out = atoi(ctx->buffer);	  // Convert to an integer
-				ctx->buf_pos = 0;				  // Reset buffer
+                // At the end of a line
+                if (c == '\n' || c == '\r') {
+                    if (ctx->buf_pos > 0) {
+                        ctx->buffer[ctx->buf_pos] = '\0'; // Null terminate
+                        *value_out = atoi(ctx->buffer);   // Convert to int
 
-				// If this read is outside the possible values, signal a bad read
-				if (*value_out > max_val || *value_out < min_val)
-					return 0;
-
-				// Signal success
-				return 1;
-			}
-
-			// Otherwise, add to the persistent context and keep buffering
-			else if (ctx->buf_pos < sizeof(ctx->buffer) - 1)
-			{
-				ctx->buffer[ctx->buf_pos++] = c;
-			}
-		}
-	}
-
-	return 0; // No complete number ready yet
+                        // Validate bounds
+                        if (*value_out > max_val || *value_out < min_val) {
+                            return 0; // Bad read
+                        }
+                        
+                        return 1; // Success!
+                    }
+                }
+                // Otherwise, keep building the string
+                else if (ctx->buf_pos < sizeof(ctx->buffer) - 1) {
+                    ctx->buffer[ctx->buf_pos++] = c;
+                }
+            }
+        } else {
+            usleep(1000); 
+        }
+    }
 }
 
 void serial_close(SerialContext *ctx)
