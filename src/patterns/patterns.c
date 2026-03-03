@@ -173,6 +173,10 @@ GLFWwindow* patterns_window_init() {
 	GLFWmonitor *monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode *mode = glfwGetVideoMode(monitor);
 	int resolution;
+	int monitor_x;
+	int monitor_y;
+	int pos_x;
+	int pos_y;
 
 	glfwWindowHint(GLFW_DECORATED, GLFW_FALSE); // Removes the window title bar and traffic light buttons
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);   // Keeps the window hidden while Ncurses runs
@@ -184,10 +188,18 @@ GLFWwindow* patterns_window_init() {
 
 	resolution = mode->width < (mode->height - 100)? mode->width : (mode->height - 100);
 
+	glfwGetMonitorPos(monitor, monitor_x, monitor_y);
+	// Place window in bottom center of the screen
+	pos_x = monitor_x + (mode->width - resolution) / 2;
+	pos_y = monitor_y - resolution;
+
+
 	// Start window
 	window = glfwCreateWindow(resolution, resolution, "Tessera", NULL, NULL);
 
 	glfwMakeContextCurrent(window);
+
+	glfwSetWindowPos(window, pos_x, pos_y);
 
 	// Initiaze GLAD
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
