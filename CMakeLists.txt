@@ -20,7 +20,7 @@ if(NOT TARGET glfw)
     add_subdirectory("include/glfw/")
 endif()
 
-# Turn shader to .h file
+# Define shader source and .h file
 set(SHADER_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/patterns/hadamard.frag")
 set(SHADER_HEADER "${CMAKE_CURRENT_BINARY_DIR}/hadamard.frag.h")
 
@@ -52,7 +52,7 @@ add_executable(tessera MACOSX_BUNDLE
 
 set_target_properties(tessera PROPERTIES
     MACOSX_BUNDLE True
-    MACOSX_BUNDLE_INFO_PLIST Info.plist
+    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_BINARY_DIR}/Info.plist
 )
 else()
 add_executable(tessera
