@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 void fwht(const float *input, float *output, int n) {
     // Copy to leave the input untouched
@@ -21,6 +22,37 @@ void fwht(const float *input, float *output, int n) {
             }
         }
     }
+}
+
+void fwht_2d(const float *input, float *output, int resolution) {
+    // Allocate temporary buffers for column extraction
+    float *temp_col_in = (float *)malloc(resolution * sizeof(float));
+    float *temp_col_out = (float *)malloc(resolution * sizeof(float));
+
+    // Process all Rows
+    for (int row = 0; row < resolution; row++) {
+        fwht(&input[row * resolution], &output[row * resolution], resolution);
+    }
+
+    // Process all Columns
+    for (int col = 0; col < resolution; col++) {
+        // Get full column
+        for (int row = 0; row < resolution; row++) {
+            temp_col_in[row] = output[row * resolution + col];
+        }
+
+        // Run the 1D transform on the extracted column
+        fwht(temp_col_in, temp_col_out, resolution);
+
+        // Put the transformed column back into the output buffer
+        for (int row = 0; row < resolution; row++) {
+            output[row * resolution + col] = temp_col_out[row];
+        }
+    }
+
+    // Clean up
+    free(temp_col_in);
+    free(temp_col_out);
 }
 
 Reconstructor* reconstruct_init(int resolution) {
@@ -54,6 +86,21 @@ void reconstruct_add(Reconstructor *recon, int pattern_u, int pattern_v, int sen
     recon->measurements[pattern_index] = (2 * sensor_value) - recon->average;
 }
 
+void reconstruct_save_raw(Reconstructor *recon, const char *filename) {
+    FILE *fp = fopen(filename, "wb");
+    if (!fp) {
+        fprintf(stderr, "Error opening raw file %s\n", filename);
+        return;
+    }
+
+    fwrite(&recon->resolution, sizeof(int), 1, fp);
+    fwrite(&recon->average, sizeof(float), 1, fp);
+
+    fwrite(recon->measurements, sizeof(float), recon->total_pixels, fp);
+
+    fclose(fp);
+}
+
 /*
 
     Normalize the output buffer and save it
@@ -64,14 +111,8 @@ void reconstruct_save(Reconstructor *recon, const char *filename) {
 
     float *transformed = (float *)malloc(recon->total_pixels * sizeof(float));
 
-    fwht(recon->measurements, transformed, recon->total_pixels);
+    fwht_2d(recon->measurements, transformed, recon->resolution);
 
-    // Open the file
-    FILE *fp = fopen(filename, "wb");
-    if (!fp) {
-        fprintf(stderr, "Error opening file %s\n", filename);
-        return;
-    }
 
     // Find min / max
     float min = 1e9, max = -1e9;
@@ -83,6 +124,13 @@ void reconstruct_save(Reconstructor *recon, const char *filename) {
     // Calculate range
     float range = max - min;
     if (range == 0) range = 1.0;
+
+    // Open the file
+    FILE *fp = fopen(filename, "wb");
+    if (!fp) {
+        fprintf(stderr, "Error opening file %s\n", filename);
+        return;
+    }
 
     // Output .PGM image
     fprintf(fp, "P5\n%d %d\n255\n", recon->resolution, recon->resolution);
@@ -100,7 +148,6 @@ void reconstruct_save(Reconstructor *recon, const char *filename) {
     }
 
     free(transformed);
-
     // Close the file
     fclose(fp);
 }

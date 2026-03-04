@@ -1,6 +1,6 @@
 /*
 
-	manager.c
+	app.c
 	Peter Ursem
 	2026
 
@@ -114,22 +114,25 @@ int main()
 		if (pattern_id == 0) {
 			// Take average from first pattern (100% White)
 			reconstruct_calibrate(recon, sensor_val);
-		} else {
-			// Add to the measurement matrix at the given u, v index
-			reconstruct_add(recon, patterns[pattern_id * 2], patterns[pattern_id * 2 + 1], sensor_val);
 		}
+		
+		// Add to the measurement matrix at the given u, v index
+		reconstruct_add(recon, patterns[pattern_id * 2], patterns[pattern_id * 2 + 1], sensor_val);
 
 		// Render TUI
 		app_status.progress = pattern_id;
 
-		if (pattern_id > 0 && pattern_id % (total_patterns / 20) == 0)
+		if (pattern_id > 0 && pattern_id % (total_patterns / 100) == 0)
 		{
+			reconstruct_save_raw(recon, "preview.bin");
 			reconstruct_save(recon, "preview.pgm");
 		}
+
 	}
 
 	app_status.progress = pattern_id;
 
+	reconstruct_save_raw(recon, "result.bin");
 	reconstruct_save(recon, "result.pgm");
 
 	free(patterns); // Delete flat packed pattern u, v data

@@ -17,8 +17,11 @@ void reconstruct_calibrate(Reconstructor *recon, int sensor_value);
 // Add a measurement to the array
 void reconstruct_add(Reconstructor *recon, int pattern_u, int pattern_v, int sensor_value);
 
-// Save current state to PGM file
+// Save current image to PGM file
 void reconstruct_save(Reconstructor *recon, const char *filename);
+
+// Save current measurements to BIN file
+void reconstruct_save_raw(Reconstructor *recon, const char *filename);
 
 // Cleanup
 void reconstruct_free(Reconstructor *r);
