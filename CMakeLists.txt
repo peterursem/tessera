@@ -109,7 +109,7 @@ else()
 endif()
 
 # Testing
-option(TESTING "Build tests for ${PROJECT_NAME}" ON)
+# option(TESTING "Build tests for ${PROJECT_NAME}" ON)
 if (TESTING)
     message("-- Building tests")
     enable_testing()
