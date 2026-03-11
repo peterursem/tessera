@@ -79,7 +79,7 @@ void form_init(Form *form)
 	dir = opendir("/dev/");
 	if (dir)
 	{
-		while ((entry = readdir(dir)) != NULL)
+		while ((entry = readdir(dir)) != NULL && sensors < 16)
 		{
 			if (!memcmp(entry->d_name, "cu.", 3) || !memcmp(entry->d_name, "tty", 3))
 			{
