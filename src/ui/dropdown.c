@@ -81,7 +81,7 @@ void form_init(Form *form)
 	{
 		while ((entry = readdir(dir)) != NULL)
 		{
-			if (!memcmp(entry->d_name, "cu.", 3))
+			if (!memcmp(entry->d_name, "cu.", 3) || !memcmp(entry->d_name, "tty", 3))
 			{
 				strcpy(field->options[sensors], entry->d_name);
 				if (!memcmp(entry->d_name, "cu.usb", 6))
