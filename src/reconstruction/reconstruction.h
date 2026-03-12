@@ -12,10 +12,11 @@ typedef struct {
 Reconstructor* reconstruct_init(int resolution);
 
 // Measure a calibration frame
-void reconstruct_calibrate(Reconstructor *recon, int sensor_value);
+void reconstruct_calibrate(Reconstructor *recon, int sensor_value, int sign);
 
 // Add a measurement to the array
 void reconstruct_add(Reconstructor *recon, int pattern_u, int pattern_v, int sensor_value);
+void reconstruct_add_diff(Reconstructor *recon, int pattern_u, int pattern_v, int sensor_value, int sign);
 
 // Save current image to PGM file
 void reconstruct_save(Reconstructor *recon, const char *filename);

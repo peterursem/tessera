@@ -241,7 +241,7 @@ void draw_quad()
 	Put the pattern buffer on screen
 
 */
-int patterns_render(GLFWwindow *window, int batch_start, int batch_size, int resolution)
+int patterns_render(GLFWwindow *window, int batch_start, int batch_size, int resolution, int polarity)
 {
 
 	if (glfwWindowShouldClose(window) || batch_start > resolution * resolution) {
@@ -256,6 +256,7 @@ int patterns_render(GLFWwindow *window, int batch_start, int batch_size, int res
 	glUniform1i(glGetUniformLocation(shader_program_id, "batch_size"), batch_size);
 	glUniform1i(glGetUniformLocation(shader_program_id, "resolution"), resolution);
 	glUniform1i(glGetUniformLocation(shader_program_id, "screen_resolution"), fb_height);
+	glUniform1i(glGetUniformLocation(shader_program_id, "polarity"), polarity);
 
 	// Draw the fullscreen quad
 	draw_quad();

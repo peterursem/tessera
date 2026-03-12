@@ -25,6 +25,6 @@ int patterns_gl_init();
 int* patterns_load_sequence(int resolution);
 
 // Render specific pattern or a batch on the GPU
-int patterns_render(GLFWwindow *window, int batch_start, int batch_size, int resolution);
+int patterns_render(GLFWwindow *window, int batch_start, int batch_size, int resolution, int sign);
 
 #endif

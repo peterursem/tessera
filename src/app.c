@@ -30,6 +30,7 @@ int main()
 	GLFWwindow *window = NULL;
 	int *patterns;
 	int pattern_id = 0; // The pattern # to render
+	int sign;
 
 	// Sampling 
 	SerialContext arduino; // The serial communication context
@@ -50,6 +51,7 @@ int main()
 	app_status.active = 0;
     app_status.batch_size = 1;
     app_status.progress = 0.0f;
+	app_status.diff = 1;
 
 	// Start Terminal UI
 	if(!pthread_create(&tui_thread, NULL, open_ui, NULL)) {
@@ -92,47 +94,55 @@ int main()
 
 	for (pattern_id = 0; pattern_id < total_patterns; pattern_id += app_status.batch_size)
 	{
-		// Put pattern on screen
-		if (patterns_render(window, pattern_id, app_status.batch_size, app_status.resolution) < 0) {
-			break;
+		for (sign = 1; sign >= -1; sign -= 2) {
+			// Put pattern on screen
+			if (patterns_render(window, pattern_id, app_status.batch_size, app_status.resolution, sign) < 0) {
+				break;
+			}
+
+			usleep(1000000 / app_status.framerate);
+
+			if (pattern_id == 0)
+			{
+				// Linger on the calibration frame for one second
+				sleep(1);
+			}
+
+			while (!reading_status)
+			{
+				reading_status = serial_read_int(&arduino, &sensor_val, MIN_SENSOR_READ, MAX_SENSOR_READ);
+			}
+			reading_status = 0;
+
+			if (pattern_id == 0) {
+				// Take average from first pattern (100% White)
+				reconstruct_calibrate(recon, sensor_val, sign);
+			}
+			
+			// Add to the measurement matrix at the given u, v index
+			if (!app_status.diff) {
+				reconstruct_add(recon, patterns[pattern_id * 2], patterns[pattern_id * 2 + 1], sensor_val);
+			} else {
+				reconstruct_add_diff(recon, patterns[pattern_id * 2], patterns[pattern_id * 2 + 1], sensor_val, sign);
+			}
+
+			if (!app_status.diff) {
+				sign = -2;
+			}
 		}
-
-		usleep(1000000 / app_status.framerate);
-
-		if (pattern_id == 0)
-		{
-			// Linger on the calibration frame for one second
-			sleep(1);
-		}
-
-		while (!reading_status)
-		{
-			reading_status = serial_read_int(&arduino, &sensor_val, MIN_SENSOR_READ, MAX_SENSOR_READ);
-		}
-		reading_status = 0;
-
-		if (pattern_id == 0) {
-			// Take average from first pattern (100% White)
-			reconstruct_calibrate(recon, sensor_val);
-		}
-		
-		// Add to the measurement matrix at the given u, v index
-		reconstruct_add(recon, patterns[pattern_id * 2], patterns[pattern_id * 2 + 1], sensor_val);
-
-		// Render TUI
+		// Update TUI
 		app_status.progress = pattern_id;
 
 		if (pattern_id > 0 && pattern_id % (total_patterns / 100) == 0)
 		{
-			reconstruct_save_raw(recon, "preview.bin");
+			reconstruct_save_raw(recon, "preview.tsr");
 			reconstruct_save(recon, "preview.pgm");
 		}
-
 	}
 
 	app_status.progress = pattern_id;
 
-	reconstruct_save_raw(recon, "result.bin");
+	reconstruct_save_raw(recon, "result.tsr");
 	reconstruct_save(recon, "result.pgm");
 
 	free(patterns); // Delete flat packed pattern u, v data

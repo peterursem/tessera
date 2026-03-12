@@ -72,8 +72,12 @@ Reconstructor* reconstruct_init(int resolution) {
   Set the full brightness measurement average  
 
 */
-void reconstruct_calibrate(Reconstructor *recon, int sensor_value) {
-    recon->average = sensor_value;
+void reconstruct_calibrate(Reconstructor *recon, int sensor_value, int sign) {
+    if (sign > 0) {
+        recon->average += sensor_value;
+    } else {
+        recon->average -= sensor_value;
+    }
 }
 
 /*
@@ -84,6 +88,15 @@ void reconstruct_calibrate(Reconstructor *recon, int sensor_value) {
 void reconstruct_add(Reconstructor *recon, int pattern_u, int pattern_v, int sensor_value) {
     int pattern_index = pattern_u * recon->resolution + pattern_v;
     recon->measurements[pattern_index] = (2 * sensor_value) - recon->average;
+}
+
+void reconstruct_add_diff(Reconstructor *recon, int pattern_u, int pattern_v, int sensor_value, int sign) {
+    int pattern_index = pattern_u * recon->resolution + pattern_v;
+    if (sign > 0) {
+        recon->measurements[pattern_index] += sensor_value;
+    } else {
+        recon->measurements[pattern_index] -= sensor_value;
+    }
 }
 
 void reconstruct_save_raw(Reconstructor *recon, const char *filename) {

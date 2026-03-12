@@ -21,6 +21,7 @@ uniform int batch_start;
 uniform int batch_size;
 uniform int screen_resolution;
 uniform int resolution;
+uniform int polarity;
 uniform isampler2D pattern_data;
 
 // Hadamard calculation
@@ -29,7 +30,10 @@ bool hadamard_pixel(int x, int y, int u, int v) {
     // If the count is even: pixel = +1, odd: pixel = -1
     int bits = (x & u) ^ (y & v);
 
-    return (bitCount(bits) & 1) == 0;
+    if (polarity > 0)
+        return (bitCount(bits) & 1) == 0;
+    else
+        return (bitCount(bits) & 1) == 1;
 }
 
 /*
