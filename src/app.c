@@ -133,7 +133,7 @@ int main()
 		// Update TUI
 		app_status.progress = pattern_id;
 
-		if (pattern_id > 0 && pattern_id % (total_patterns / 100) == 0)
+		if (pattern_id > 0 && pattern_id % 64 == 0)
 		{
 			reconstruct_save_raw(recon, "preview.tsr");
 			reconstruct_save(recon, "preview.pgm");
