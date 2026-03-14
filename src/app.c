@@ -23,10 +23,11 @@
 
 volatile TesseraStatus app_status;
 
-// === ADAPTIVE SENSING QUEUE ===
+// === GREEDY ADAPTIVE QUEUE ===
 typedef struct {
     int u;
     int v;
+    float priority; // <-- New!
 } PatternNode;
 
 typedef struct {
@@ -43,18 +44,32 @@ void queue_init(PatternQueue *q, int capacity) {
     q->capacity = capacity;
 }
 
-void queue_push(PatternQueue *q, int u, int v) {
+void queue_push(PatternQueue *q, int u, int v, float priority) {
     if (q->tail < q->capacity) {
         q->data[q->tail].u = u;
         q->data[q->tail].v = v;
+        q->data[q->tail].priority = priority;
         q->tail++;
     }
 }
 
 PatternNode queue_pop(PatternQueue *q) {
-    PatternNode node = q->data[q->head];
+    // Find the pattern with the highest priority in the active queue
+    int best_idx = q->head;
+    for (int i = q->head + 1; i < q->tail; i++) {
+        if (q->data[i].priority > q->data[best_idx].priority) {
+            best_idx = i;
+        }
+    }
+    
+    // Grab the best node
+    PatternNode best_node = q->data[best_idx];
+    
+    // Swap the best node with the front of the line so we can safely advance 'head'
+    q->data[best_idx] = q->data[q->head];
     q->head++;
-    return node;
+    
+    return best_node;
 }
 
 int queue_is_empty(PatternQueue *q) {
@@ -66,31 +81,29 @@ void queue_free(PatternQueue *q) {
 }
 
 // Find and queue the children of a given pattern
-void push_children(PatternQueue *q, int u, int v, int resolution) {
+// Add priority to the arguments
+void push_children(PatternQueue *q, int u, int v, int resolution, float priority) {
     int cu[2], cv[2];
     int nu = 0, nv = 0;
 
-    // The DC base pattern (0,0) spawns 3 base children
     if (u == 0 && v == 0) {
-        queue_push(q, 1, 0); // Horizontal detail
-        queue_push(q, 0, 1); // Vertical detail
-        queue_push(q, 1, 1); // Diagonal detail
+        queue_push(q, 1, 0, priority); 
+        queue_push(q, 0, 1, priority); 
+        queue_push(q, 1, 1, priority); 
         return;
     }
 
-    // Determine 1D children for U dimension
     if (u == 0) { cu[0] = 0; nu = 1; }
     else { cu[0] = 2 * u; cu[1] = 2 * u + 1; nu = 2; }
 
-    // Determine 1D children for V dimension
     if (v == 0) { cv[0] = 0; nv = 1; }
     else { cv[0] = 2 * v; cv[1] = 2 * v + 1; nv = 2; }
 
-    // Push all valid 2D combinations to the queue
     for (int i = 0; i < nu; i++) {
         for (int j = 0; j < nv; j++) {
             if (cu[i] < resolution && cv[j] < resolution) {
-                queue_push(q, cu[i], cv[j]);
+                // Pass priority to the push function
+                queue_push(q, cu[i], cv[j], priority);
             }
         }
     }
@@ -215,19 +228,14 @@ int main()
     PatternQueue q;
     queue_init(&q, total_patterns);
     
-    // Start by queuing ONLY the base approximation pattern (0, 0)
-    queue_push(&q, 0, 0);
+    // 3. Start by queuing ONLY the base approximation pattern with massive priority
+    queue_push(&q, 0, 0, 999999.0f);
 
-    // Set your threshold (Need to tune)
-    // Put a static flat pattern on screen
-    patterns_render(window, 0, 1, app_status.resolution, -1);
-    
-    // Auto-tune the threshold!
-    float threshold = calculate_noise_threshold(&arduino);
     int patterns_measured = 0;
 
-    // Run until the queue is completely empty
+    // 4. Run until the queue is completely empty
     while (!queue_is_empty(&q) && app_status.active) {
+        
         // Get the next pattern to measure
         PatternNode node = queue_pop(&q);
         int current_u = node.u;
@@ -269,27 +277,17 @@ int main()
                 sign = -2;
             }
         }
-        
+
         patterns_measured++;
         app_status.progress = patterns_measured;
 
-		// --- ADAPTIVE THRESHOLDING ---
         // Fetch the measurement we just recorded
         int index = current_u * app_status.resolution + current_v;
-        
-        // Use the RAW absolute difference for the threshold check
         float raw_coeff = fabs(recon->measurements[index]);
 
-        // Add this line to see what the camera is "thinking"
-        printf("Pattern (%d, %d) | Raw Diff: %.2f | Threshold: %.2f\n", 
-               current_u, current_v, raw_coeff, threshold);
+        // Unconditionally push the children, using THIS pattern's raw_coeff as their priority!
+        push_children(&q, current_u, current_v, app_status.resolution, raw_coeff);
 
-        // If the raw signal beats the raw electrical noise, queue its children!
-        if ((current_u == 0 && current_v == 0) || raw_coeff > threshold) {
-            push_children(&q, current_u, current_v, app_status.resolution);
-        }
-
-        // TUI & Preview updates
         if (patterns_measured > 0 && patterns_measured % 64 == 0) {
             reconstruct_save_raw(recon, "preview.tsr");
             reconstruct_save(recon, "preview.pgm", 'w');
