@@ -130,6 +130,7 @@ target_include_directories(tessera PRIVATE
 
 # Link the graphics libraries
 target_link_libraries(tessera PRIVATE 
+    m
     glfw 
     OpenGL::GL
     ${CURSES_LIBRARIES}

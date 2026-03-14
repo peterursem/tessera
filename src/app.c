@@ -273,17 +273,19 @@ int main()
         patterns_measured++;
         app_status.progress = patterns_measured;
 
-        // --- ADAPTIVE THRESHOLDING ---
+		// --- ADAPTIVE THRESHOLDING ---
         // Fetch the measurement we just recorded
         int index = current_u * app_status.resolution + current_v;
-        float coeff = recon->measurements[index];
         
-        // Normalize it by area/energy so small wavelets are scaled correctly
-        float energy = (float)(haar_energy(current_u, app_status.resolution) * haar_energy(current_v, app_status.resolution));
-        float normalized_coeff = fabs(coeff / energy);
+        // Use the RAW absolute difference for the threshold check
+        float raw_coeff = fabs(recon->measurements[index]);
 
-        // If the detail is significant (or if it's the base pattern), queue its children
-        if ((current_u == 0 && current_v == 0) || normalized_coeff > threshold) {
+        // Add this line to see what the camera is "thinking"
+        printf("Pattern (%d, %d) | Raw Diff: %.2f | Threshold: %.2f\n", 
+               current_u, current_v, raw_coeff, threshold);
+
+        // If the raw signal beats the raw electrical noise, queue its children!
+        if ((current_u == 0 && current_v == 0) || raw_coeff > threshold) {
             push_children(&q, current_u, current_v, app_status.resolution);
         }
 
