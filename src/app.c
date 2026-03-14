@@ -96,6 +96,45 @@ void push_children(PatternQueue *q, int u, int v, int resolution) {
     }
 }
 
+float calculate_noise_threshold(SerialContext *arduino) {
+    int samples = 100;
+    int readings[samples];
+    int sensor_val = 0;
+    long sum = 0;
+    
+    printf("Calibrating sensor noise floor...\n");
+
+    // 1. Gather static samples
+    for (int i = 0; i < samples; i++) {
+        int reading_status = 0;
+        while (!reading_status) {
+            reading_status = serial_read_int(arduino, &sensor_val, MIN_SENSOR_READ, MAX_SENSOR_READ);
+        }
+        readings[i] = sensor_val;
+        sum += sensor_val;
+    }
+
+    // 2. Calculate the mean (mu)
+    float mean = (float)sum / samples;
+
+    // 3. Calculate variance and standard deviation (sigma)
+    float variance_sum = 0.0f;
+    for (int i = 0; i < samples; i++) {
+        float diff = readings[i] - mean;
+        variance_sum += (diff * diff);
+    }
+    
+    float std_dev = sqrt(variance_sum / samples);
+
+    // 4. Set threshold to 3.5x standard deviation
+    // If your sensor is incredibly clean, enforce a minimum threshold of 1.0
+    float threshold = (std_dev * 3.5f) > 1.0f ? (std_dev * 3.5f) : 1.0f;
+    
+    printf("Noise StdDev: %.2f | Set Threshold: %.2f\n", std_dev, threshold);
+    
+    return threshold;
+}
+
 int main()
 {
 	// ===== VARS =====
@@ -166,24 +205,28 @@ int main()
 
 	// ===== The Adaptive Loop =====
 
-    // 1. Create a reverse lookup array to map (u, v) back to your sorted GPU pattern_id
+    // Create a reverse lookup array to map (u, v) to GPU pattern_id
     int *uv_to_id = (int *)malloc(total_patterns * sizeof(int));
     for (int i = 0; i < total_patterns; i++) {
         uv_to_id[patterns[i * 2] * app_status.resolution + patterns[i * 2 + 1]] = i;
     }
 
-    // 2. Initialize the Queue
+    // Initialize the Queue
     PatternQueue q;
     queue_init(&q, total_patterns);
     
-    // 3. Start by queuing ONLY the base approximation pattern (0, 0)
+    // Start by queuing ONLY the base approximation pattern (0, 0)
     queue_push(&q, 0, 0);
 
-    // Set your threshold (You will need to tune this based on your Arduino sensor's noise floor!)
-    float threshold = 5.0f; 
+    // Set your threshold (Need to tune)
+    // Put a static flat pattern on screen
+    patterns_render(window, 0, 1, app_status.resolution, -1);
+    
+    // Auto-tune the threshold!
+    float threshold = calculate_noise_threshold(&arduino);
     int patterns_measured = 0;
 
-    // 4. Run until the queue is completely empty
+    // Run until the queue is completely empty
     while (!queue_is_empty(&q) && app_status.active) {
         // Get the next pattern to measure
         PatternNode node = queue_pop(&q);
