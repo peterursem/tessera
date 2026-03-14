@@ -16,13 +16,16 @@ typedef struct {
 GLFWwindow* patterns_window_init();
 
 // Initialize shader program
-void patterns_shader_init(int resolution);
+void patterns_shader_init(int resolution, char mode);
 
 // Initialize OpenGL
 int patterns_gl_init();
 
 // Load a pattern sequence into VRAM and return the sequence
-int* patterns_load_sequence(int resolution);
+// modes:
+// h = Hadamard
+// w = Wavelet
+int* patterns_load_sequence(int resolution, char mode);
 
 // Render specific pattern or a batch on the GPU
 int patterns_render(GLFWwindow *window, int batch_start, int batch_size, int resolution, int sign);

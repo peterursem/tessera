@@ -72,10 +72,10 @@ int main()
 	// Start a borderless fulscreen square window
 	window = patterns_window_init();
 	// Load the shader
-	patterns_shader_init(app_status.resolution);
+	patterns_shader_init(app_status.resolution, 'w');
 
 	// Load the patterns into VRAM in sequency order and save the sequence
-	patterns = patterns_load_sequence(app_status.resolution);
+	patterns = patterns_load_sequence(app_status.resolution, 'w');
 
 	// Setup serial communication
 	if (serial_init(&arduino, (char *)app_status.sensor_port) < 0)

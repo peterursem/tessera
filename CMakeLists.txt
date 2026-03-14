@@ -36,18 +36,21 @@ if(NOT glfw3_FOUND AND NOT TARGET glfw)
 endif()
 
 # Define shader source and .h file
-set(SHADER_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/patterns/hadamard.frag")
-set(SHADER_HEADER "${CMAKE_CURRENT_BINARY_DIR}/hadamard.frag.h")
+set(HADAMARD_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/patterns/hadamard.frag")
+set(HADAMARD_HEADER "${CMAKE_CURRENT_BINARY_DIR}/hadamard.frag.h")
+set(WAVELET_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/patterns/wavelet.frag")
+set(WAVELET_HEADER "${CMAKE_CURRENT_BINARY_DIR}/wavelet.frag.h")
 
 # Convert shader using xxd command
 add_custom_command(
-    OUTPUT "${SHADER_HEADER}"
+    OUTPUT ${HADAMARD_HEADER} ${WAVELET_HEADER}
 
-    COMMAND xxd -i hadamard.frag > ${SHADER_HEADER}
+    COMMAND xxd -i hadamard.frag > ${HADAMARD_HEADER}
+    COMMAND xxd -i wavelet.frag > ${WAVELET_HEADER}
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/patterns"
 
     # Re-run this command if the shader file changes
-    DEPENDS ${SHADER_FILE}
+    DEPENDS ${HADAMARD_FILE} ${WAVELET_FILE}
     COMMENT "Generating hadamard.frag.h from hadamard.frag..."
     VERBATIM
 )
@@ -66,7 +69,8 @@ if (APPLE)
         src/ui/ui.c 
         src/ui/dropdown.c 
         src/patterns/patterns.c 
-        ${SHADER_HEADER}
+        ${HADAMARD_HEADER}
+        ${WAVELET_HEADER}
         src/patterns/glad.c 
         src/sample/sample.c 
         src/reconstruction/reconstruction.c
@@ -101,7 +105,8 @@ else()
         src/ui/ui.c 
         src/ui/dropdown.c 
         src/patterns/patterns.c 
-        ${SHADER_HEADER}
+        ${HADAMARD_HEADER}
+        ${WAVELET_HEADER}
         src/patterns/glad.c 
         src/sample/sample.c 
         src/reconstruction/reconstruction.c

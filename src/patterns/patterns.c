@@ -10,6 +10,7 @@
 
 #include "patterns.h"
 #include "hadamard.frag.h"
+#include "wavelet.frag.h"
 
 #include <stdio.h>	// For printing errors to the console
 #include <stdlib.h> // For malloc and free
@@ -28,15 +29,18 @@ int compare_patterns(const void *a, const void *b);
 	Compile shader program and set the global program_id
 
 */
-void patterns_shader_init(int resolution)
+void patterns_shader_init(int resolution, char mode)
 {
 	// Vertex shader for a single fullscreen quad
 	const GLchar *vertex_shader_source = "#version 410 core\n"
 									   "const vec2 vertices[4] = vec2[4](vec2(-1.0, -1.0), vec2(1.0, -1.0), vec2(-1.0, 1.0), vec2(1.0, 1.0));\n"
 									   "void main() { gl_Position = vec4(vertices[gl_VertexID], 0.0, 1.0); }\n";
 
-	const GLchar *frag_shader_source = (const GLchar *)hadamard_frag;
-	GLint frag_shader_length = (GLint)hadamard_frag_len;
+	const GLchar *hadamard_shader_source = (const GLchar *)hadamard_frag;
+	GLint hadamard_shader_length = (GLint)hadamard_frag_len;
+
+	const GLchar *wavelet_shader_source = (const GLchar *)wavelet_frag;
+	GLint wavelet_shader_length = (GLint)wavelet_frag_len;
 
 	// Shader and program IDs
 	GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
@@ -58,7 +62,10 @@ void patterns_shader_init(int resolution)
     }
 
 	// Compile fragment shader
-	glShaderSource(fragment_shader, 1, &frag_shader_source, &frag_shader_length);
+	if (mode == 'h')
+		glShaderSource(fragment_shader, 1, &hadamard_shader_source, &hadamard_shader_length);
+	else
+		glShaderSource(fragment_shader, 1, &wavelet_shader_source, &wavelet_shader_length);
 	glCompileShader(fragment_shader);
 	// Debug
     glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
@@ -86,7 +93,7 @@ void patterns_shader_init(int resolution)
 	Returns the flattened list of u, v values
 
 */
-int* patterns_load_sequence(int resolution)
+int* patterns_load_sequence(int resolution, char mode)
 {
 	int total_patterns = resolution * resolution;
 
@@ -102,8 +109,8 @@ int* patterns_load_sequence(int resolution)
 	{
 		for (pattern_v = 0; pattern_v < resolution; pattern_v++)
 		{
-			patterns[pattern_id].u = bit_reverse(pattern_u, resolution);
-			patterns[pattern_id].v = bit_reverse(pattern_v, resolution);
+			patterns[pattern_id].u = mode == 'h' ? bit_reverse(pattern_u, resolution) : pattern_u;
+			patterns[pattern_id].v = mode == 'h' ? bit_reverse(pattern_v, resolution) : pattern_v;
 
 			patterns[pattern_id].sequency = dimension_sequency(pattern_u) + dimension_sequency(pattern_v);
 			
@@ -307,11 +314,26 @@ int bit_reverse(int n, int resolution)
 }
 
 /*
-	Determine the sequency value of one dimension of a pattern
+
+	Determine the sequency value of one dimension of a Hadamard pattern
+
 */
 int dimension_sequency(int index)
 {
 	return index ^ (index >> 1);
+}
+
+/*
+    Determine the scale level of one dimension of a Haar pattern
+*/
+int dimension_scale(int index) {
+    if (index == 0) return 0;
+    int msb = 0;
+    int temp = index;
+    while (temp >>= 1) {
+        msb++;
+    }
+    return msb + 1;
 }
 
 /*

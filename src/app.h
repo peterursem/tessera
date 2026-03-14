@@ -8,6 +8,7 @@ typedef struct {
     int batch_size;
     int progress;
     int diff;
+    char mode;
     char sensor_port[32];
 } TesseraStatus;
 
