@@ -19,7 +19,7 @@ void reconstruct_add(Reconstructor *recon, int pattern_u, int pattern_v, int sen
 void reconstruct_add_diff(Reconstructor *recon, int pattern_u, int pattern_v, int sensor_value, int sign);
 
 // Save current image to PGM file
-void reconstruct_save(Reconstructor *recon, const char *filename);
+void reconstruct_save(Reconstructor *recon, const char *filename, char mode);
 
 // Save current measurements to BIN file
 void reconstruct_save_raw(Reconstructor *recon, const char *filename);

@@ -136,14 +136,14 @@ int main()
 		if (pattern_id > 0 && pattern_id % 64 == 0)
 		{
 			reconstruct_save_raw(recon, "preview.tsr");
-			reconstruct_save(recon, "preview.pgm");
+			reconstruct_save(recon, "preview.pgm", 'w');
 		}
 	}
 
 	app_status.progress = pattern_id;
 
 	reconstruct_save_raw(recon, "result.tsr");
-	reconstruct_save(recon, "result.pgm");
+	reconstruct_save(recon, "result.pgm", 'w');
 
 	free(patterns); // Delete flat packed pattern u, v data
 	glfwTerminate(); // End OpenGL

@@ -22,6 +22,7 @@ GLuint quad_vao;
 // ===== Helper functions =====
 int bit_reverse(int n, int resolution);
 int dimension_sequency(int index);
+int dimension_scale(int index);
 int compare_patterns(const void *a, const void *b);
 
 /*

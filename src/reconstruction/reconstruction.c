@@ -55,6 +55,72 @@ void fwht_2d(const float *input, float *output, int resolution) {
     free(temp_col_out);
 }
 
+// Helper to find the number of active pixels (energy) for a given 1D Haar index
+int haar_energy(int index, int resolution) {
+    if (index == 0) return resolution;
+    
+    // Find the scale level (j)
+    int j = 0;
+    int temp = index;
+    while (temp >>= 1) {
+        j++;
+    }
+    // The support shrinks by half for each scale level
+    return resolution >> j;
+}
+
+// 1D Inverse Fast Haar Transform
+void ihaar_1d(float *data, int n) {
+    // Temporary array for the reconstruction steps
+    float *temp = (float *)malloc(n * sizeof(float));
+
+    // n MUST be a power of 2
+    for (int h = 1; h < n; h *= 2) {
+        for (int i = 0; i < h; i++) {
+            float approx = data[i];
+            float detail = data[h + i];
+
+            // Recombine approximation and detail
+            temp[2 * i] = approx + detail;
+            temp[2 * i + 1] = approx - detail;
+        }
+        // Copy back the updated approximations for the next scale iteration
+        for (int i = 0; i < h * 2; i++) {
+            data[i] = temp[i];
+        }
+    }
+    
+    free(temp);
+}
+
+// 2D Inverse Fast Haar Transform
+void ihaar_2d(float *data, int resolution) {
+    float *temp_col = (float *)malloc(resolution * sizeof(float));
+
+    // Process all Rows
+    for (int row = 0; row < resolution; row++) {
+        ihaar_1d(&data[row * resolution], resolution);
+    }
+
+    // Process all Columns
+    for (int col = 0; col < resolution; col++) {
+        // Extract full column
+        for (int row = 0; row < resolution; row++) {
+            temp_col[row] = data[row * resolution + col];
+        }
+
+        // Run the 1D transform on the extracted column
+        ihaar_1d(temp_col, resolution);
+
+        // Put the transformed column back into the data buffer
+        for (int row = 0; row < resolution; row++) {
+            data[row * resolution + col] = temp_col[row];
+        }
+    }
+
+    free(temp_col);
+}
+
 Reconstructor* reconstruct_init(int resolution) {
     Reconstructor *recon = (Reconstructor*)malloc(sizeof(Reconstructor));
     int total_pixels = resolution * resolution;
@@ -119,13 +185,27 @@ void reconstruct_save_raw(Reconstructor *recon, const char *filename) {
     Normalize the output buffer and save it
 
 */
-void reconstruct_save(Reconstructor *recon, const char *filename) {
+void reconstruct_save(Reconstructor *recon, const char *filename, char mode) {
     float measurement = 0.0f;
 
     float *transformed = (float *)malloc(recon->total_pixels * sizeof(float));
 
-    fwht_2d(recon->measurements, transformed, recon->resolution);
+    if (mode == 'h')
+        fwht_2d(recon->measurements, transformed, recon->resolution);
+    else {
+        for (int u = 0; u < recon->resolution; u++) {
+            for (int v = 0; v < recon->resolution; v++) {
+                int index = u * recon->resolution + v;
+                
+                // The 2D energy is the product of the 1D row and column energies
+                float energy = (float)(haar_energy(u, recon->resolution) * haar_energy(v, recon->resolution));
+                
+                transformed[index] = recon->measurements[index] / energy;
+            }
+        }
 
+        ihaar_2d(transformed, recon->resolution);
+    }
 
     // Find min / max
     float min = 1e9, max = -1e9;
