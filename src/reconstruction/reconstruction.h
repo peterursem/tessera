@@ -8,6 +8,8 @@ typedef struct {
     float *measurements;    // An array of all samples in natural order
 } Reconstructor;
 
+int haar_energy(int index, int resolution);
+
 // Initialize the Reconstructor (Linking it to the GPU Context)
 Reconstructor* reconstruct_init(int resolution);
 

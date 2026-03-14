@@ -19,8 +19,82 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <math.h>
 
 volatile TesseraStatus app_status;
+
+// === ADAPTIVE SENSING QUEUE ===
+typedef struct {
+    int u;
+    int v;
+} PatternNode;
+
+typedef struct {
+    PatternNode *data;
+    int head;
+    int tail;
+    int capacity;
+} PatternQueue;
+
+void queue_init(PatternQueue *q, int capacity) {
+    q->data = (PatternNode *)malloc(capacity * sizeof(PatternNode));
+    q->head = 0;
+    q->tail = 0;
+    q->capacity = capacity;
+}
+
+void queue_push(PatternQueue *q, int u, int v) {
+    if (q->tail < q->capacity) {
+        q->data[q->tail].u = u;
+        q->data[q->tail].v = v;
+        q->tail++;
+    }
+}
+
+PatternNode queue_pop(PatternQueue *q) {
+    PatternNode node = q->data[q->head];
+    q->head++;
+    return node;
+}
+
+int queue_is_empty(PatternQueue *q) {
+    return q->head == q->tail;
+}
+
+void queue_free(PatternQueue *q) {
+    free(q->data);
+}
+
+// Find and queue the children of a given pattern
+void push_children(PatternQueue *q, int u, int v, int resolution) {
+    int cu[2], cv[2];
+    int nu = 0, nv = 0;
+
+    // The DC base pattern (0,0) spawns 3 base children
+    if (u == 0 && v == 0) {
+        queue_push(q, 1, 0); // Horizontal detail
+        queue_push(q, 0, 1); // Vertical detail
+        queue_push(q, 1, 1); // Diagonal detail
+        return;
+    }
+
+    // Determine 1D children for U dimension
+    if (u == 0) { cu[0] = 0; nu = 1; }
+    else { cu[0] = 2 * u; cu[1] = 2 * u + 1; nu = 2; }
+
+    // Determine 1D children for V dimension
+    if (v == 0) { cv[0] = 0; nv = 1; }
+    else { cv[0] = 2 * v; cv[1] = 2 * v + 1; nv = 2; }
+
+    // Push all valid 2D combinations to the queue
+    for (int i = 0; i < nu; i++) {
+        for (int j = 0; j < nv; j++) {
+            if (cu[i] < resolution && cv[j] < resolution) {
+                queue_push(q, cu[i], cv[j]);
+            }
+        }
+    }
+}
 
 int main()
 {
@@ -90,55 +164,96 @@ int main()
 	// Show the window
 	glfwShowWindow(window);
 
-	// ===== The Loop =====
+	// ===== The Adaptive Loop =====
 
-	for (pattern_id = 0; pattern_id < total_patterns; pattern_id += app_status.batch_size)
-	{
-		for (sign = 1; sign >= -1; sign -= 2) {
-			// Put pattern on screen
-			if (patterns_render(window, pattern_id, app_status.batch_size, app_status.resolution, sign) < 0) {
-				break;
-			}
+    // 1. Create a reverse lookup array to map (u, v) back to your sorted GPU pattern_id
+    int *uv_to_id = (int *)malloc(total_patterns * sizeof(int));
+    for (int i = 0; i < total_patterns; i++) {
+        uv_to_id[patterns[i * 2] * app_status.resolution + patterns[i * 2 + 1]] = i;
+    }
 
-			usleep(1000000 / app_status.framerate);
+    // 2. Initialize the Queue
+    PatternQueue q;
+    queue_init(&q, total_patterns);
+    
+    // 3. Start by queuing ONLY the base approximation pattern (0, 0)
+    queue_push(&q, 0, 0);
 
-			if (pattern_id == 0)
-			{
-				// Linger on the calibration frame for one second
-				sleep(1);
-			}
+    // Set your threshold (You will need to tune this based on your Arduino sensor's noise floor!)
+    float threshold = 5.0f; 
+    int patterns_measured = 0;
 
-			while (!reading_status)
-			{
-				reading_status = serial_read_int(&arduino, &sensor_val, MIN_SENSOR_READ, MAX_SENSOR_READ);
-			}
-			reading_status = 0;
+    // 4. Run until the queue is completely empty
+    while (!queue_is_empty(&q) && app_status.active) {
+        // Get the next pattern to measure
+        PatternNode node = queue_pop(&q);
+        int current_u = node.u;
+        int current_v = node.v;
+        
+        // Find the GPU ID for this pattern
+        pattern_id = uv_to_id[current_u * app_status.resolution + current_v];
 
-			if (pattern_id == 0) {
-				// Take average from first pattern (100% White)
-				reconstruct_calibrate(recon, sensor_val, sign);
-			}
-			
-			// Add to the measurement matrix at the given u, v index
-			if (!app_status.diff) {
-				reconstruct_add(recon, patterns[pattern_id * 2], patterns[pattern_id * 2 + 1], sensor_val);
-			} else {
-				reconstruct_add_diff(recon, patterns[pattern_id * 2], patterns[pattern_id * 2 + 1], sensor_val, sign);
-			}
+        // --- Standard Measurement Code ---
+        for (sign = 1; sign >= -1; sign -= 2) {
+            // Note: batch_size is forced to 1 because we need the result NOW to decide what to do next
+            if (patterns_render(window, pattern_id, 1, app_status.resolution, sign) < 0) {
+                app_status.active = 0; // Trigger shutdown if window closes
+                break;
+            }
 
-			if (!app_status.diff) {
-				sign = -2;
-			}
-		}
-		// Update TUI
-		app_status.progress = pattern_id;
+            usleep(1000000 / app_status.framerate);
 
-		if (pattern_id > 0 && pattern_id % 64 == 0)
-		{
-			reconstruct_save_raw(recon, "preview.tsr");
-			reconstruct_save(recon, "preview.pgm", 'w');
-		}
-	}
+            if (current_u == 0 && current_v == 0 && sign == 1) {
+                sleep(1); // Linger on calibration frame
+            }
+
+            while (!reading_status) {
+                reading_status = serial_read_int(&arduino, &sensor_val, MIN_SENSOR_READ, MAX_SENSOR_READ);
+            }
+            reading_status = 0;
+
+            if (current_u == 0 && current_v == 0) {
+                reconstruct_calibrate(recon, sensor_val, sign);
+            }
+
+            if (!app_status.diff) {
+                reconstruct_add(recon, current_u, current_v, sensor_val);
+            } else {
+                reconstruct_add_diff(recon, current_u, current_v, sensor_val, sign);
+            }
+
+            if (!app_status.diff) {
+                sign = -2;
+            }
+        }
+        
+        patterns_measured++;
+        app_status.progress = patterns_measured;
+
+        // --- ADAPTIVE THRESHOLDING ---
+        // Fetch the measurement we just recorded
+        int index = current_u * app_status.resolution + current_v;
+        float coeff = recon->measurements[index];
+        
+        // Normalize it by area/energy so small wavelets are scaled correctly
+        float energy = (float)(haar_energy(current_u, app_status.resolution) * haar_energy(current_v, app_status.resolution));
+        float normalized_coeff = fabs(coeff / energy);
+
+        // If the detail is significant (or if it's the base pattern), queue its children
+        if ((current_u == 0 && current_v == 0) || normalized_coeff > threshold) {
+            push_children(&q, current_u, current_v, app_status.resolution);
+        }
+
+        // TUI & Preview updates
+        if (patterns_measured > 0 && patterns_measured % 64 == 0) {
+            reconstruct_save_raw(recon, "preview.tsr");
+            reconstruct_save(recon, "preview.pgm", 'w');
+        }
+    }
+
+    // Cleanup Loop variables
+    free(uv_to_id);
+    queue_free(&q);
 
 	app_status.progress = pattern_id;
 
