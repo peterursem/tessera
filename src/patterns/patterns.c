@@ -112,8 +112,11 @@ int* patterns_load_sequence(int resolution, char mode)
 			patterns[pattern_id].u = mode == 'h' ? bit_reverse(pattern_u, resolution) : pattern_u;
 			patterns[pattern_id].v = mode == 'h' ? bit_reverse(pattern_v, resolution) : pattern_v;
 
-			patterns[pattern_id].sequency = dimension_sequency(pattern_u) + dimension_sequency(pattern_v);
-			
+			if (mode == 'h')
+				patterns[pattern_id].sequency = dimension_sequency(pattern_u) + dimension_sequency(pattern_v);
+			else
+				patterns[pattern_id].sequency = dimension_scale(pattern_u) + dimension_scale(pattern_v);
+
 			pattern_id++;
 		}
 	}
