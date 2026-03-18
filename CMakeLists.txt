@@ -115,6 +115,7 @@ if (APPLE)
     set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-v${PROJECT_VERSION}-macOS")
 else()
     add_executable(tessera src/app.c)
+    target_link_libraries(tessera PRIVATE tessera_core)
     # Configure CPack for Linux
     set(CPACK_GENERATOR "TGZ") # Creates a .tar.gz archive
     set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-v${PROJECT_VERSION}-Linux")
@@ -127,20 +128,6 @@ if (TESTING)
     enable_testing()
     add_subdirectory(tests)
 endif()
-
-# Add include directories
-target_include_directories(tessera PRIVATE 
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_BINARY_DIR}
-    ${CURSES_INCLUDE_DIRS}
-)
-
-# Link the graphics libraries
-target_link_libraries(tessera PRIVATE 
-    glfw 
-    OpenGL::GL
-    ${CURSES_LIBRARIES}
-)
 
 install(TARGETS tessera
     BUNDLE DESTINATION .
