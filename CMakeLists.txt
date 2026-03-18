@@ -106,6 +106,9 @@ else()
         src/sample/sample.c 
         src/reconstruction/reconstruction.c
     )
+    # Configure CPack for Linux
+    set(CPACK_GENERATOR "TGZ") # Creates a .tar.gz archive
+    set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-v${PROJECT_VERSION}-Linux")
 endif()
 
 # Testing

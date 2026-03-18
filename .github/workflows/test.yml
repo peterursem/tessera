@@ -1,0 +1,37 @@
+name: Run Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install Linux Dependencies
+      if: runner.os == 'Linux'
+      # We need xxd for the shader header, and dev packages for OpenGL/Curses/GLFW
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y xxd libglfw3-dev libgl1-mesa-dev libncurses5-dev libncursesw5-dev
+
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DTESTING=ON
+
+    - name: Build
+      run: cmake --build build
+
+    - name: Test
+      working-directory: build
+      run: ctest --output-on-failure
