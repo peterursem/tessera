@@ -53,6 +53,29 @@ add_custom_command(
 )
 add_custom_target(generate_shader_headers DEPENDS "${SHADER_HEADER}")
 
+# Core libraries
+add_library(tessera_core OBJECT
+    src/ui/ui.c 
+    src/ui/dropdown.c 
+    src/patterns/patterns.c 
+    ${SHADER_HEADER}
+    src/patterns/glad.c 
+    src/sample/sample.c 
+    src/reconstruction/reconstruction.c
+)
+
+target_include_directories(tessera_core PUBLIC 
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CURSES_INCLUDE_DIRS}
+)
+
+target_link_libraries(tessera_core PUBLIC 
+    glfw 
+    OpenGL::GL
+    ${CURSES_LIBRARIES}
+)
+
 # Add source files
 if (APPLE)
     # Put app icon in /resources/
@@ -64,13 +87,6 @@ if (APPLE)
     # Make excecutable as a MacOS bundle
     add_executable(tessera MACOSX_BUNDLE
         src/app.c 
-        src/ui/ui.c 
-        src/ui/dropdown.c 
-        src/patterns/patterns.c 
-        ${SHADER_HEADER}
-        src/patterns/glad.c 
-        src/sample/sample.c 
-        src/reconstruction/reconstruction.c
         ${MACOS_ICON}
     )
 
@@ -79,6 +95,7 @@ if (APPLE)
         MACOSX_BUNDLE True
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/MacOS/Info.plist
     )
+    target_link_libraries(tessera PRIVATE tessera_core)
 
     # Load app start script
     set(SCRIPT_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/MacOS/start.sh")
@@ -97,16 +114,7 @@ if (APPLE)
     set(CPACK_BUNDLE_ICON ${MACOS_ICON})
     set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-v${PROJECT_VERSION}-macOS")
 else()
-    add_executable(tessera
-        src/app.c 
-        src/ui/ui.c 
-        src/ui/dropdown.c 
-        src/patterns/patterns.c 
-        ${SHADER_HEADER}
-        src/patterns/glad.c 
-        src/sample/sample.c 
-        src/reconstruction/reconstruction.c
-    )
+    add_executable(tessera src/app.c)
     # Configure CPack for Linux
     set(CPACK_GENERATOR "TGZ") # Creates a .tar.gz archive
     set(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-v${PROJECT_VERSION}-Linux")

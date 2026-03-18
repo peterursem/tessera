@@ -1,46 +1,31 @@
 include(CTest)
 
+set(SHADER_HEADER "${CMAKE_BINARY_DIR}/hadamard.frag.h")
+set_source_files_properties(${SHADER_HEADER} PROPERTIES GENERATED TRUE)
+
 # Tests
 function(add_test_executable name)
     set(TEST_NAME "test-${name}")
 
-    # Create the test executable
-    # Compile shaders for pattern tests
-    if (${name} MATCHES "patterns")
-        # Define shader source and .h file
-        set(SHADER_HEADER "${CMAKE_CURRENT_BINARY_DIR}/../hadamard.frag.h")
-        set_source_files_properties(${SHADER_HEADER} PROPERTIES GENERATED TRUE)
-        add_executable(${TEST_NAME} "src/${name}.c" "src/tests.h" "../src/patterns/glad.c" ${SHADER_HEADER})
-        add_dependencies(${TEST_NAME} generate_shader_headers)
-    else()
-        add_executable("${TEST_NAME}" "src/${name}.c" "src/tests.h")
-    endif()
+    # The test executable ONLY needs its own source file
+    add_executable("${TEST_NAME}" "src/${name}.c" "src/tests.h")
 
-    target_include_directories("${TEST_NAME}" PRIVATE 
-        "${PROJECT_SOURCE_DIR}/include"
-        ${CMAKE_CURRENT_BINARY_DIR}/..
-    )
+    # Link the core application code to the test!
+    # Because we used PUBLIC in the root, this automatically links GLFW, OpenGL, and Curses too.
+    target_link_libraries("${TEST_NAME}" PRIVATE tessera_core)
 
-    # Link the library to the test executable
-    add_dependencies("${TEST_NAME}" tessera)
+    # Ensure the shader is generated before tests compile
+    add_dependencies("${TEST_NAME}" generate_shader_headers)
 
     # Set the test executable name
-    string(REPLACE "_" "/" TEST_EXECUTABLE_NAME ${name}) # Replace underscores with slashes in name
-    add_test(NAME ${TEST_EXECUTABLE_NAME} COMMAND "${TEST_NAME}") # Add test command
+    string(REPLACE "_" "/" TEST_EXECUTABLE_NAME ${name})
+    add_test(NAME ${TEST_EXECUTABLE_NAME} COMMAND "${TEST_NAME}")
 
-    # Set the test executable properties if needed
     if (CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
         target_compile_options("${TEST_NAME}" PRIVATE --coverage -w)
         target_link_options("${TEST_NAME}" PRIVATE --coverage)
-        # Link math library separately if needed
-        target_link_libraries("${TEST_NAME}" PRIVATE 
-            glfw 
-            OpenGL::GL
-            ${CURSES_LIBRARIES}
-        ) 
     endif()
 
-    # Set the output directory for the test executable
     set_target_properties(${TEST_NAME} PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/tests/
     )
@@ -51,7 +36,5 @@ file(GLOB TESTS "src/*.c")
 
 foreach(TEST_FILE ${TESTS})
     get_filename_component(TEST_NAME ${TEST_FILE} NAME_WE)
-
-    # Call the preceding function to add the test executable
     add_test_executable(${TEST_NAME})
 endforeach()

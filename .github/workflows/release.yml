@@ -23,7 +23,7 @@ jobs:
             ext: tar.gz
 
     steps:
-    - uses: actions/checkout@v4 # Downgraded to v4 (latest actual version)
+    - uses: actions/checkout@v6
       with:
         submodules: recursive
 
@@ -45,9 +45,7 @@ jobs:
       run: cpack
 
     - name: Save compiled binary
-      uses: actions/upload-artifact@v4 # Downgraded to v4
+      uses: actions/upload-artifact@v6
       with:
         name: Tessera-${{ runner.os }}
-        # The '*' catches any version number (v1.0.0, v1.2.1, etc.)
-        # matrix.ext applies .dmg for Mac and .tar.gz for Linux
         path: build/Tessera-v*-${{ runner.os }}.${{ matrix.ext }}
