@@ -1,7 +1,7 @@
 #include "tests.h"
 #include "math.h"
 
-#include "../../src/patterns/patterns.c"
+#include "patterns.h"
 
 /*
 
