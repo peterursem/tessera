@@ -9,8 +9,9 @@ function(add_test_executable name)
     if (${name} MATCHES "patterns")
         # Define shader source and .h file
         set(SHADER_HEADER "${CMAKE_CURRENT_BINARY_DIR}/../hadamard.frag.h")
-
+        set_source_files_properties(${SHADER_HEADER} PROPERTIES GENERATED TRUE)
         add_executable(${TEST_NAME} "src/${name}.c" "src/tests.h" "../src/patterns/glad.c" ${SHADER_HEADER})
+        add_dependencies(${TEST_NAME} generate_shader_headers)
     else()
         add_executable("${TEST_NAME}" "src/${name}.c" "src/tests.h")
     endif()

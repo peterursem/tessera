@@ -51,6 +51,7 @@ add_custom_command(
     COMMENT "Generating hadamard.frag.h from hadamard.frag..."
     VERBATIM
 )
+add_custom_target(generate_shader_headers DEPENDS "${SHADER_HEADER}")
 
 # Add source files
 if (APPLE)
