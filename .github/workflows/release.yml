@@ -1,78 +1,53 @@
-name: Build and Release
+name: CMake Build and Pack
 
 on:
   push:
+    branches: [ "main" ]
     tags:
-      - 'v*' # Triggers on tags like v1.0.0, v1.1-beta, etc.
+      - 'v*'
 
-permissions:
-  contents: write # Required to create a GitHub Release
+env:
+  BUILD_TYPE: Release
 
 jobs:
-  build-and-pack:
+  build:
     name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        # Using 'include' lets us attach extra variables (like the file extension) to each OS
         include:
           - os: macos-latest
-            artifact_name: Tessera-macOS.dmg
-            cpack_file: build/Tessera-v*-macOS.dmg
+            ext: dmg
           - os: ubuntu-latest
-            artifact_name: Tessera-Linux.tar.gz
-            cpack_file: build/Tessera-v*-Linux.tar.gz
+            ext: tar.gz
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v4 # Downgraded to v4 (latest actual version)
       with:
         submodules: recursive
 
     - name: Install Linux Dependencies
+      # This step ONLY runs on Linux to install the required libraries
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
         sudo apt-get install -y xxd libglfw3-dev libgl1-mesa-dev libncurses5-dev libncursesw5-dev
 
     - name: Configure CMake
-      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     - name: Build
-      run: cmake --build build --config Release
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
     - name: Pack
-      working-directory: build
-      run: cpack -C Release
+      working-directory: ${{github.workspace}}/build
+      run: cpack
 
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v4
+    - name: Save compiled binary
+      uses: actions/upload-artifact@v4 # Downgraded to v4
       with:
-        name: ${{ matrix.artifact_name }}
-        path: ${{ matrix.cpack_file }}
-
-  release:
-    name: Create GitHub Release
-    needs: build-and-pack # Waits for both Mac and Linux to finish building
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-          merge-multiple: true # Flattens the directory structure
-
-      - name: Check if Prerelease
-        id: prerelease_check
-        # Automatically flags as prerelease if your tag contains -alpha, -beta, or -rc
-        run: |
-          if [[ "${{ github.ref }}" == *"-alpha"* ]] || [[ "${{ github.ref }}" == *"-beta"* ]] || [[ "${{ github.ref }}" == *"-rc"* ]]; then
-            echo "is_prerelease=true" >> $GITHUB_ENV
-          else
-            echo "is_prerelease=false" >> $GITHUB_ENV
-          fi
-
-      - name: Publish Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: artifacts/*
-          prerelease: ${{ env.is_prerelease == 'true' }}
-          generate_release_notes: true
+        name: Tessera-${{ runner.os }}
+        # The '*' catches any version number (v1.0.0, v1.2.1, etc.)
+        # matrix.ext applies .dmg for Mac and .tar.gz for Linux
+        path: build/Tessera-v*-${{ runner.os }}.${{ matrix.ext }}
