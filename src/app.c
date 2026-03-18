@@ -20,8 +20,6 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-volatile TesseraStatus app_status;
-
 int main()
 {
 	// ===== VARS =====

@@ -55,6 +55,7 @@ add_custom_target(generate_shader_headers DEPENDS "${SHADER_HEADER}")
 
 # Core libraries
 add_library(tessera_core OBJECT
+    src/app_state.c
     src/ui/ui.c 
     src/ui/dropdown.c 
     src/patterns/patterns.c 
