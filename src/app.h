@@ -8,7 +8,7 @@ typedef struct {
     int batch_size;
     int progress;
     int diff;
-    char sensor_port[32];
+    char sensor_port[36];
 } TesseraStatus;
 
 volatile extern TesseraStatus app_status;

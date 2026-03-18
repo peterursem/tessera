@@ -27,7 +27,7 @@ void form_init(Form *form)
 	form->menu_selection = 0; // Menu start at the top
 
 	// Field 0: Resolution
-	char *resolution_label = (char *)malloc(11 * sizeof(char));
+	char *resolution_label = (char *)malloc(12 * sizeof(char));
 	Dropdown *field;
 
 	field = &form->fields[0];
