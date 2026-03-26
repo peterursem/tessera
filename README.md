@@ -2,25 +2,30 @@
 
 
 # 🧱 Tessera
+A single pixel camera using Hadamard basis compressed sensing.
 
-![C](https://img.shields.io/badge/c-%2300599C.svg?style=for-the-badge&logo=c&logoColor=white)
-![macOS](https://img.shields.io/badge/mac%20os-000000?style=for-the-badge&logo=macos&logoColor=F0F0F0)
+**Languages and Frameworks**\
+[![C](https://img.shields.io/badge/C-00599C?style=for-the-badge&logo=c&logoColor=white)](#) [![OpenGl](https://img.shields.io/badge/OpenGl-5487A6?style=for-the-badge&logo=OpenGl&logoColor=fff)](#) [![CMake](https://img.shields.io/badge/CMake-%23008FBA.svg?style=for-the-badge&logo=cmake&logoColor=white)](#)\
+**OS Support**\
+[![macOS](https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=F0F0F0)](#) [![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)](#)
 
-> *Tessera has been tested on MacOS, support for other platforms is currently unknown*
+**My website**\
+[![Static Badge](https://img.shields.io/badge/Peter_Ursem-peter?style=for-the-badge&color=%2366CDAA)](https://ursem.ca/)
+
 
 ## 📋 Overview
 
-### A Single Pixel Camera
-Tessera is a hardware and software implementation of compressed sensing with a single photodetector.
+### Hardware:
+The apparatus used to capture test images is a very low-cost visible light detection setup.\
+It consists of:
 
-### Hardware
-The current implementation of the sensing hardware is an apparatus consisting of: 
-- A 50mm NIKKOR lens
-- An object placed at the NIKKOR lens's focal point
-- A 50mm lens directly behind the object
-- A 10mm lens direclty behind the 50mm lens
-- A photoresistor placed so the aperture of the NIKKOR lens is sharp.
-- An arduino microcontroller for analog measurements over serial
+        **1. Light:** An LCD monitor projects Hadamard patterns. The objective lens focuses the light patterns onto the object.\
+        **2. Object:** The object masks light from the pattern, blocking some from the detector.\
+        **3. Collection:** The field lens and relay lens condense the light and focus the objective lens’ aperture onto the detector.\
+        **4. Detection:** The photoresistor converts the resulting light intensity into a measurable voltage to be read by an Arduino.
+
+Samples were taken of all Hadamard patterns to allow for easy reordering in post.
+
 ```mermaid
 flowchart LR;
 
@@ -57,19 +62,24 @@ flowchart LR;
     %% Thick arrow for light entering the system
     linkStyle 0,1,2,3,4 stroke-width:3px,fill:none,stroke:yellow;
 ```
-![IMG_3078-1](https://github.com/user-attachments/assets/12293841-1156-4e92-b28f-fc2a6edb173a)
 
-The elements of the optical train are held together with 3D printed mounts that make it easy to focus the NIKKOR lens and photoresistor. The photoresistor is monitored by an arduino that passes serial data to the main computer.
+![IMG_3171](https://github.com/user-attachments/assets/5befb335-5526-4eb6-82e5-1918508d3675)
 
-### Software
-The software is composed of two elements:
+The elements of the optical train are held together with 3D printed mounts that make it easy to focus the NIKKOR lens and photoresistor.
+
+### Software:
+The software is comprised of three elements:
+
 * **Patterning:**
-    * Generating Hadamard patterns
-    * Ordering patterns for Walsh sequency
+    * Generate Hadamard patterns
+    * Order patterns by sequency (# of sign changes)
     * Display patterns
  
+* **Sampling:**
+    * Capture and store brightness values from the photoresistor
+ 
 * **Reconstruction:**
-    * All the measurements are stored and then run through a fast Walsh-Hadamard transform to create a final image
+    * The final image is reconstructed using a fast Walsh-Hadamard transform
 
 
 ## 📸 Usage
@@ -88,15 +98,15 @@ The software is composed of two elements:
 ## 🖼️ Results
 > All example captures were made using a generic photoresistor and an aperture value of f/11 on the front NIKKOR lens.
 
-|Tulip (64x64)|Arrow (32x32)|
-|--|--|
-|![Tulip64_100](https://github.com/user-attachments/assets/59b304f5-117c-4c9a-a9ab-b6be07fe3c9f)|![Arrow32_100 copy](https://github.com/user-attachments/assets/f16cb3f9-c181-4c5c-94de-c11f4260e196)|
-
+|Mountain (64px)|Balloon (256px)|Tulip (64px)|Arrow (32px)|
+|--|--|--|--|
+|<img src="https://github.com/user-attachments/assets/bc0d448d-4200-4989-bf53-8001df84f01a" height=64>|<img src="https://github.com/user-attachments/assets/fc385244-cbad-496b-9b6e-b29156d46635" height=64>|<img src="https://github.com/user-attachments/assets/59b304f5-117c-4c9a-a9ab-b6be07fe3c9f" height=64>|<img src="https://github.com/user-attachments/assets/f16cb3f9-c181-4c5c-94de-c11f4260e196" height=64>|
 
 
 ## 🧪 Experimental Setup
-     
-In later trials I covered the apparatus with more cloths to block ambient light, though Tessera should eliminate ambient light through averaging.
 
-![IMG_3086](https://github.com/user-attachments/assets/af2d7e79-7e46-410f-8866-d4186a5c3f45)
-![IMG_3072 (1)](https://github.com/user-attachments/assets/9176eca6-94ca-48cf-b739-4f50d4c12b21)
+![IMG_3230](https://github.com/user-attachments/assets/bcc44b71-9850-4c77-a3cb-0c7451eb0805)
+
+## 👨‍🎓 Research Poster
+### [Download](https://github.com/user-attachments/files/26288451/UrsemP_Poster_ResearchDay26.pdf)
+![UrsemP_Poster_ResearchDay26](https://github.com/user-attachments/assets/be81ce91-490e-427e-b016-6bb2b67da17d)
